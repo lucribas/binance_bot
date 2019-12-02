@@ -18,6 +18,9 @@ $timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
 $log_file_name = "log/MON_" + $timestamp + ".log"
 $log = StdoutLog.new($debug, $log_file_name)
 
+$log_file_name = "log/TRADE_" + $timestamp + ".log"
+$trade = StdoutLog.new($debug, $log_file_name)
+
 def format_time( evt_time )
 	evt = (evt_time.to_f/1000)
 	evt = evt.to_f-evt.to_i

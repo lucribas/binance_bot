@@ -24,8 +24,8 @@ require_relative 'candlestick_patterns_classifier'
 #|   TYPE_TREND                                                     |
 #+------------------------------------------------------------------+
 # TYPE_TREND
-:UPPER    #Ascending
-:DOWN     #Descending
+:BULL    #Ascending
+:BEAR     #Descending
 :LATERAL  #Lateral
 
 #+------------------------------------------------------------------+
@@ -65,7 +65,7 @@ def pattern_classifier( candle, position )
 	end
 	sma_avg_close	= sma_sum_close/num
 	c[:trend]	= (sma_avg_close == c[:close]) ? :LATERAL : (
-					 (sma_avg_close < c[:close]) ? :UPPER : :DOWN )
+					 (sma_avg_close < c[:close]) ? :BULL : :BEAR )
 	# Get sizes of shadows
 	if (c[:market] == :BULL) then
 		c[:shade_low]	= c[:open]-c[:low];
