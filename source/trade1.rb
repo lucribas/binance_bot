@@ -142,7 +142,7 @@ EM.run do
 			obj_data	= obj["data"]
 			event_time	= obj_data["E"]
 			trade_time	= obj_data["T"]
-			hand		= obj_data["m"] ? 1.0: -1.0
+			bull		= obj_data["m"] ? false: true
 			message		= " %s -> %s [%3.2fms] : %.2f (%s) - %.6f" %
 			[
 				format_time( event_time ),
@@ -152,15 +152,15 @@ EM.run do
 				obj_data["m"]?"bid":"ask",
 				obj_data["q"] #qty
 			]
-			update_candle( { :price => obj_data["p"], :time => trade_time, :qty => obj_data["q"], :hand => hand })
+			update_candle( { :price => obj_data["p"], :time => trade_time, :qty => obj_data["q"], :bull => bull })
 			f_val = obj_data["q"].to_f
 			if true then
 				#if f_val>=0.002 then
 				message = message + " " + "X"*f_val.to_i
-				if obj_data["m"] then
-					$log.info message.red
-				else
+				if bull then
 					$log.info message.cyan
+				else
+					$log.info message.red
 				end
 				# new_order( # evt vl qty
 				# 	(event_time/1000.0),

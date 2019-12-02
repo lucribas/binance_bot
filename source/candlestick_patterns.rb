@@ -115,6 +115,6 @@ def pattern_classifier( candle, position )
 	#--- spinning top
 	c[:type]	= :CAND_SPIN_TOP if ( c[:type]==:CAND_SHORT and c[:shade_low] > c[:bodysize] and c[:shade_high] > c[:bodysize])
 
-	c[:patten] = pattern( candle, position )
+	c[:pattern] = pattern( candle, position )
 end
 #+------------------------------------------------------------------+

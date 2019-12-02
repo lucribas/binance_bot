@@ -3,8 +3,10 @@
 $position = 0
 $position_time = 0
 
-$candle_period = 10 * 1000
 # period in seconds
+$candle_period = 20 * 1000
+REVERSION_PERIOD = 5 * 1000
+# period in candles
 SMA_PERIOD = (3 * 60 * 1000/$candle_period).to_i
 BODY_PERIOD = (20 * 1000/$candle_period).to_i
 
@@ -34,10 +36,9 @@ def update_candle( trade )
 	trade_price = trade[:price].to_f
 	trade_time  = trade[:time].to_i
 	trade_qty =  trade[:qty].to_f
-	trade_hand =  trade[:hand].to_f
+	trade_bull =  trade[:bull]
 
 	#como tratar qndo nao tem trade
-
 
 	#inside candle
 	if trade_time < ($position_time + $candle_period) and $position_time != 0 then
@@ -47,24 +48,11 @@ def update_candle( trade )
 		c[:time_close]	= trade_time
 		c[:trade_qty]	= c[:trade_qty] + trade_qty
 		c[:bodysize]	= (c[:close]-c[:open]).abs;
-		c[:handliq]		= c[:handliq] + trade_qty * trade_hand
+		c[:sum_bull]	= c[:sum_bull] + ( trade_bull ? trade_qty : 0.0 )
+		c[:sum_bear]	= c[:sum_bear] + ( (!trade_bull) ? trade_qty : 0.0 )
 
-		# timeout to confirm (30% to 100% of candle time)
-		if !c2.nil? and !c2[:reversion].nil? then
-			if trade_time > ($position_time + $candle_period*0.3) then
-				puts "waiting for reversion.. %s  %.2f" % [ c[:reversion], c[:handliq] ]
-				if c[:handliq] > 1.0 and c[:reversion] == :BULL
-					# reversion confirmed
-					$log.info "N"*30
-					$log.info "BULL REVERSION CONFIRMED!".yellow
-				end
-
-				if c[:handliq] < -1.0 and c[:reversion] == :BEAR
-					# reversion confirmed
-					$log.info "N"*30
-					$log.info "BEAR REVERSION CONFIRMED!".yellow
-				end
-			end
+		if trade_time > ($position_time + REVERSION_PERIOD) then
+				check_reversion( c, c2)
 		end
 	else
 		#closed candle
@@ -74,6 +62,9 @@ def update_candle( trade )
 			make_forecast( $candle, $position )
 			$log.info  "candle[#{$position}]:  %s" % $candle[$position].inspect
 		end
+
+		# previous reversion
+		check_reversion( c, c2)
 
 		# initialize the next candlestick
 		$position = $position + 1
@@ -87,8 +78,10 @@ def update_candle( trade )
 			high:  trade_price,
 			low:   trade_price,
 			trade_qty: trade_qty,
-			handliq: trade_qty * trade_hand,
-			bodysize: 0}
+			sum_bull: ( trade_bull ? trade_qty : 0.0 ),
+			sum_bear: ( (!trade_bull) ? trade_qty : 0.0 ),
+			bodysize: 0
+		}
 	end
 end
 
@@ -154,9 +147,7 @@ def make_forecast( candle, position )
 	c1_p = c1[:pattern]
 	if !c1_p.nil? then
 		c1_pattern = c1_p[:pattern]
-
-		binding.pry
-
+		# binding.pry
 		#--- DOWN SMA
 		if c1[:trend] == :DOWN then
 			# detect a reversion
@@ -166,7 +157,7 @@ def make_forecast( candle, position )
 			end
 
 		#--- UP SMA
-		elsif c1[:trend] == :UP then
+		elsif c1[:trend] == :UPPER then
 			# detect a reversion
 			if PAT_BEAR.include?(c1_pattern) then
 				c1[:forecast] = :BEAR
@@ -174,4 +165,34 @@ def make_forecast( candle, position )
 			end
 		end
 	end
+end
+
+
+## ADICIONAR MMA e cruzamento
+def check_reversion( c, c2 )
+
+	if !c2.nil? and !c2[:reversion].nil? then
+
+		$log.info "waiting for reversion %s: sum_bull=%.2f sum_bear=%.2f" % [ c[:reversion].to_s, c[:sum_bull], c[:sum_bear] ]
+
+		if c2[:reversion] == :BULL and
+			c[:sum_bull] > 1.0 and
+			c[:sum_bull] >= 1.6*c[:sum_bear] then
+			# reversion confirmed
+			$log.info "N"*30
+			$log.info "BULL REVERSION CONFIRMED!".yellow
+		elsif c2[:reversion] == :BEAR and
+			c[:sum_bear] > 1.0 and
+			c[:sum_bear] >= 1.6*c[:sum_bull] then
+			# reversion confirmed
+			$log.info "N"*30
+			$log.info "BEAR REVERSION CONFIRMED!".yellow
+		end
+
+	end
+# se o volume for maior que 1
+# sum_bull = sum trades > open
+# sum_bear = sum trades < open
+# se > 70% na tendencia entao confirma tendencia
+
 end
