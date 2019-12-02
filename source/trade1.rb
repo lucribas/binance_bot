@@ -124,12 +124,11 @@ EM.run do
 
 		obj = JSON.parse(e.data)
 		if obj["stream"]=="btcusdt@depth5" then
-			obj_data = obj["data"]
-			event_time = obj_data["E"]
-			trade_time = obj_data["T"]
-
+			obj_data	= obj["data"]
+			event_time	= obj_data["E"]
+			trade_time	= obj_data["T"]
 			#binding.pry
-			message = " %s -> %s [%3.2fms] : %.2f - %.2f" %
+			message		= " %s -> %s [%3.2fms] : %.2f - %.2f" %
 			[
 				format_time( event_time ),
 				format_time( trade_time ),
@@ -140,10 +139,11 @@ EM.run do
 			$log.info message.yellow
 		end
 		if obj["stream"]=="btcusdt@aggTrade" then
-			obj_data = obj["data"]
-			event_time = obj_data["E"]
-			trade_time = obj_data["T"]
-			message = " %s -> %s [%3.2fms] : %.2f (%s) - %.6f" %
+			obj_data	= obj["data"]
+			event_time	= obj_data["E"]
+			trade_time	= obj_data["T"]
+			hand		= obj_data["m"] ? 1.0: -1.0
+			message		= " %s -> %s [%3.2fms] : %.2f (%s) - %.6f" %
 			[
 				format_time( event_time ),
 				format_time( trade_time ),
@@ -152,7 +152,7 @@ EM.run do
 				obj_data["m"]?"bid":"ask",
 				obj_data["q"] #qty
 			]
-			update_candle( { :price => obj_data["p"], :time => trade_time, :qty => obj_data["q"] })
+			update_candle( { :price => obj_data["p"], :time => trade_time, :qty => obj_data["q"], :hand => hand })
 			f_val = obj_data["q"].to_f
 			if true then
 				#if f_val>=0.002 then
