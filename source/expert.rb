@@ -15,6 +15,7 @@ $candle = []
 $volume = []
 $oscilator = []
 $mma = []
+$on_charge = false
 
 require_relative 'candlestick_patterns'
 
@@ -50,6 +51,9 @@ def update_candle( trade )
 		c[:bodysize]	= (c[:close]-c[:open]).abs;
 		c[:sum_bull]	= c[:sum_bull] + ( trade_bull ? trade_qty : 0.0 )
 		c[:sum_bear]	= c[:sum_bear] + ( (!trade_bull) ? trade_qty : 0.0 )
+
+		c[:market]	=	(c[:open] == c[:close]) ? :LATERAL : (
+							(c[:open] < c[:close]) ? :BULL : :BEAR )
 
 		if trade_time > ($position_time + REVERSION_PERIOD) then
 				check_reversion( c, c2)
@@ -150,6 +154,11 @@ def make_forecast( candle, position )
 		# binding.pry
 		#--- DOWN SMA
 		if c1[:trend] == :DOWN then
+
+			if c1[:market] == :UPPER and $on_charge then
+				c1[:reversion] = :SHORT_BULL
+			end
+
 			# detect a reversion
 			if PAT_BULL.include?(c1_pattern) then
 				c1[:forecast] = :BULL
@@ -158,6 +167,11 @@ def make_forecast( candle, position )
 
 		#--- UP SMA
 		elsif c1[:trend] == :UPPER then
+
+			if c1[:market] == :DOWN and $on_charge then
+				c1[:reversion] = :SHORT_BEAR
+			end
+
 			# detect a reversion
 			if PAT_BEAR.include?(c1_pattern) then
 				c1[:forecast] = :BEAR
@@ -181,12 +195,28 @@ def check_reversion( c, c2 )
 			# reversion confirmed
 			$log.info "N"*30
 			$log.info "BULL REVERSION CONFIRMED!".yellow
+			$on_charge = true
+		elsif c2[:reversion] == :SHORT_BULL and
+				c[:sum_bull] > 1.0 and
+				c[:sum_bull] >= 1.6*c[:sum_bear] then
+				# reversion confirmed
+				$log.info "N"*30
+				$log.info "SHORT_BULL REVERSION CONFIRMED!".yellow
+				$on_charge = false
 		elsif c2[:reversion] == :BEAR and
 			c[:sum_bear] > 1.0 and
 			c[:sum_bear] >= 1.6*c[:sum_bull] then
 			# reversion confirmed
 			$log.info "N"*30
 			$log.info "BEAR REVERSION CONFIRMED!".yellow
+			$on_charge = true
+		elsif c2[:reversion] == :SHORT_BEAR and
+			c[:sum_bear] > 1.0 and
+			c[:sum_bear] >= 1.6*c[:sum_bull] then
+			# reversion confirmed
+			$log.info "N"*30
+			$log.info "SHORT_BEAR REVERSION CONFIRMED!".yellow
+			$on_charge = false
 		end
 
 	end
