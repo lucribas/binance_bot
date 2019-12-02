@@ -7,47 +7,13 @@
 
 
 
-#+------------------------------------------------------------------+
-#|   TYPE_:CANDLESTICK
-#+------------------------------------------------------------------+
-:CAND_NONE           #Unknown
-:CAND_MARIBOZU       #Maribozu
-:CAND_MARIBOZU_LONG  #Maribozu long
-:CAND_DOJI           #Doji
-:CAND_SPIN_TOP       #Spins
-:CAND_HAMMER         #Hammer
-:CAND_INVERT_HAMMER  #Inverted Hammer
-:CAND_LONG           #Long
-:CAND_SHORT          #Short
-:CAND_STAR           #Star
 
 
-#+------------------------------------------------------------------+
-#|   TYPE_TREND                                                     |
-#+------------------------------------------------------------------+
-# TYPE_TREND
-:UPPER    #Ascending
-:DOWN     #Descending
-:LATERAL  #Lateral
 
-#+------------------------------------------------------------------+
-#|   :CANDLE_STRUCTURE                                               |
-#+------------------------------------------------------------------+
-# struct :CANDLE_STRUCTURE
-#    double            openhighlowclose; # OHLC
-#    datetime          time;     #Time
-#    TYPE_TREND        trend;    #Trend
-#    bool              bull;     #Bullish candlestick
-#    double            bodysize; #Size of body
-#    TYPE_:CANDLESTICK  type;     #Type of candlestick
-#   };
 #+------------------------------------------------------------------+
 #|   Function of determining of candlestick                         |
 #+------------------------------------------------------------------+
 
-
-SMA_PERIOD = 10
-BODY_PERIOD = 20
 
 def pattern( candle, position )
 
@@ -64,23 +30,23 @@ def pattern( candle, position )
 			# Inverted Hammer, the Bull
 			if ( c1[:trend]==:DOWN and # check direction of trend
 				c1[:type]==:CAND_INVERT_HAMMER) then # the "Inverted Hammer" check
-				result	= { com: "Inverted Hammer (Bull)", pat: :INV_HAMMER_BULL}
+				result	= { com: "Inverted Hammer (Bull)", pattern: :INV_HAMMER_BULL}
 			end
 			# Hammer, the Bull
 			if ( c1[:trend]==:DOWN and # check direction of trend
 				c1[:type]==:CAND_HAMMER) then # the "Hammer" check
-				result	= { com: "Hammer (Bull)", pat: :INV_HAMMER_BULL}
+				result	= { com: "Hammer (Bull)", pattern: :INV_HAMMER_BULL}
 			end
 
 			# Hanging Man, the Bear
 			if ( c1[:trend]==:UPPER and # check direction of trend
 				c1[:type]==:CAND_HAMMER) then # the "Hammer" check
-				result	= { com: "Hanging Man (Bear)", pat: :HAMMER_BEAR}
+				result	= { com: "Hanging Man (Bear)", pattern: :HAMMER_BEAR}
 			end
 			# Inverted Hammer, the Bear
 			if ( c1[:trend]==:UPPER and # check direction of trend
 				c1[:type]==:CAND_INVERT_HAMMER) then # the "Inverted Hammer" check
-				result	= { com: "Inverted Hammer (Bear)", pat: :INV_HAMMER_BEAR}
+				result	= { com: "Inverted Hammer (Bear)", pattern: :INV_HAMMER_BEAR}
 			end
 
 			#------
@@ -95,7 +61,7 @@ def pattern( candle, position )
 			if ( c1[:trend]==:UPPER and c2[:trend]==:UPPER and # check direction of trend
 				c2[:type]==:CAND_INVERT_HAMMER) then # the "Inverted Hammer" check
 
-				result	= { com: "Shooting Star (Bear)", pat: :SHOOTING_STAR_BEAR}
+				result	= { com: "Shooting Star (Bear)", pattern: :SHOOTING_STAR_BEAR}
 
 				# if ( c1[:close]<=c2[:open]) # close 1 is less than or equal to open 1
 				# 		comment2="Shooting Star the Bear"

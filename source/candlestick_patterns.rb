@@ -45,9 +45,6 @@ require_relative 'candlestick_patterns_classifier'
 #+------------------------------------------------------------------+
 
 
-SMA_PERIOD = 10
-BODY_PERIOD = 20
-
 def pattern_classifier( candle, position )
 
 	b	= candle[position-1]

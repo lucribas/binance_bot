@@ -1,18 +1,20 @@
 
-
-require_relative 'candlestick_patterns'
-
-
 # analises
 $position = 0
 $position_time = 0
 
-$candle_period = 30000
+$candle_period = 10 * 1000
+# period in seconds
+SMA_PERIOD = 3 * 60 * 1000.0/$candle_period
+BODY_PERIOD = 20 * 1000.0/$candle_period
+
 $renko = []
 $candle = []
 $volume = []
 $oscilator = []
 $mma = []
+
+require_relative 'candlestick_patterns'
 
 # indicators
 # cross_mma
@@ -40,7 +42,6 @@ def update_candle( trade )
 		c[:time_close]	= trade_time
 		c[:trade_qty]	= c[:trade_qty] + trade_qty
 		c[:bodysize]	= (c[:close]-c[:open]).abs;
-		#c[:trend] = trade_price == c[:open] ? 0 : (trade_price > c[:open] ? 1 : -1)
 	else
 		# process the closed current candlesticks
 		if $position > 1 then
@@ -85,5 +86,39 @@ def decision
 # se eu confirmar ele com 1pip em ate 10 segundos
 # entrar executar operação
 
+
+
+
+
+c[:pattern] == :INV_HAMMER_BULL
+c[:pattern] == :INV_HAMMER_BULL
+c[:pattern] == :HAMMER_BEAR
+c[:pattern] == :INV_HAMMER_BEAR
+c[:pattern] == :SHOOTING_STAR_BEAR
+c[:pattern] == :BELT_HOLD_BULL
+c[:pattern] == :BELT_HOLD_BEAR
+c[:pattern] == :ENGULFING_BULL
+c[:pattern] == :ENGULFING_BEAR
+c[:pattern] == :HARAMI_CROSS_BULL
+c[:pattern] == :HARAMI_CROSS_BEAR
+c[:pattern] == :HARAMI_BULL
+c[:pattern] == :HARAMI_BEAR
+c[:pattern] == :DOJI_STAR_BULL
+c[:pattern] == :DOJI_STAR_BULL
+c[:pattern] == :DOJI_STAR_BEAR
+c[:pattern] == :DOJI_STAR_BEAR
+c[:pattern] == :PIERCING_LINE_BULL
+c[:pattern] == :PIERCING_LINE_BULL
+c[:pattern] == :DARK_CLOUD_COVER_BEAR
+c[:pattern] == :DARK_CLOUD_COVER_BEAR
+c[:pattern] == :MEETING_LINES_BULL
+c[:pattern] == :MEETING_LINES_BEAR
+c[:pattern] == :MATCHING_LOW_BULL
+c[:pattern] == :HOMING_PIGEON_BULL
+c[:pattern] == :KICKING_BULL
+c[:pattern] == :KICKING_BEAR
+c[:pattern] == :ON_NECK_LINE_BEAR
+c[:pattern] == :IN_NECK_LINE_BEAR
+c[:pattern] == :THRUSTING_LINE_BEAR
 
 end

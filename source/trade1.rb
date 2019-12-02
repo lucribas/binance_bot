@@ -26,7 +26,7 @@ def format_time( evt_time )
 		evt	]
 end
 
-future_rest  = Binance::Client::REST_FUTURE.new api_key: api_key, secret_key: secret_key
+future_rest  = Binance::Client::REST_FUTURE.new api_key: $api_key, secret_key: $secret_key
 future_ws    = Binance::Client::WebSocketFuture.new
 
 listen_key = future_rest.listenKey["listenKey"]
