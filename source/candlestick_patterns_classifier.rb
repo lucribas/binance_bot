@@ -30,23 +30,23 @@ def pattern( candle, position )
 			# Inverted Hammer, the Bull
 			if ( c1[:trend]==:BEAR and # check direction of trend
 				c1[:type]==:CAND_INVERT_HAMMER) then # the "Inverted Hammer" check
-				result	= { com: "Inverted Hammer (Bull)", pattern: :INV_HAMMER_BULL}
+				result	= { com: "Inverted Hammer (Bull)", figure: :INV_HAMMER_BULL}
 			end
 			# Hammer, the Bull
 			if ( c1[:trend]==:BEAR and # check direction of trend
 				c1[:type]==:CAND_HAMMER) then # the "Hammer" check
-				result	= { com: "Hammer (Bull)", pattern: :INV_HAMMER_BULL}
+				result	= { com: "Hammer (Bull)", figure: :INV_HAMMER_BULL}
 			end
 
 			# Hanging Man, the Bear
 			if ( c1[:trend]==:BULL and # check direction of trend
 				c1[:type]==:CAND_HAMMER) then # the "Hammer" check
-				result	= { com: "Hanging Man (Bear)", pattern: :HAMMER_BEAR}
+				result	= { com: "Hanging Man (Bear)", figure: :HAMMER_BEAR}
 			end
 			# Inverted Hammer, the Bear
 			if ( c1[:trend]==:BULL and # check direction of trend
 				c1[:type]==:CAND_INVERT_HAMMER) then # the "Inverted Hammer" check
-				result	= { com: "Inverted Hammer (Bear)", pattern: :INV_HAMMER_BEAR}
+				result	= { com: "Inverted Hammer (Bear)", figure: :INV_HAMMER_BEAR}
 			end
 
 			#------
@@ -61,7 +61,7 @@ def pattern( candle, position )
 			if ( c1[:trend]==:BULL and c2[:trend]==:BULL and # check direction of trend
 				c2[:type]==:CAND_INVERT_HAMMER) then # the "Inverted Hammer" check
 
-				result	= { com: "Shooting Star (Bear)", pattern: :SHOOTING_STAR_BEAR}
+				result	= { com: "Shooting Star (Bear)", figure: :SHOOTING_STAR_BEAR}
 
 				# if ( c1[:close]<=c2[:open]) # close 1 is less than or equal to open 1
 				# 		comment2="Shooting Star the Bear"
@@ -75,32 +75,32 @@ def pattern( candle, position )
 			if ( c2[:trend]==:BEAR and c2[:bull] and !c1[:bull] and # check direction of trend and direction of candlestick
 				c2[:type]==:CAND_MARIBOZU_LONG and # the "long Maribozu" check
 				c1[:bodysize]<c2[:bodysize] and c2[:close]<c1[:close]) then # body of the first candlestick is smaller than body of the second one, close price of the second candlestick is lower than the close price of the first one
-				result	= { com: "Belt Hold (Bull)", pattern: :BELT_HOLD_BULL}
+				result	= { com: "Belt Hold (Bull)", figure: :BELT_HOLD_BULL}
 			end
 
 			# Belt Hold, the Bear
 			if ( c2[:trend]==:BULL and !c2[:bull] and c1[:bull] and # check direction of trend and direction of candlestick
 				c2[:type]==:CAND_MARIBOZU_LONG and # the "long Maribozu" check
 				c1[:bodysize]<c2[:bodysize] and c2[:close]>c1[:close]) then # body of the first candlestick is lower than body of the second one; close price of the second candlestick is higher than that of the first one
-				result	= { com: "Belt Hold (Bear)", pattern: :BELT_HOLD_BEAR}
+				result	= { com: "Belt Hold (Bear)", figure: :BELT_HOLD_BEAR}
 			end
 
 			#------
 			# Engulfing, the Bull
 			if ( c1[:trend]==:BEAR and !c1[:bull] and c2[:trend]==:BEAR and c2[:bull] and # check direction of trend and direction of candlestick
 				c1[:bodysize]<c2[:bodysize]) then # body of the third candlestick is bigger than that of the second one
-				# result	= { com: "Engulfing (Bull)", pattern: :ENGULFING_BULL}
+				# result	= { com: "Engulfing (Bull)", figure: :ENGULFING_BULL}
 				if ( c1[:close]>=c2[:open] and c1[:open]<c2[:close]) then # body of the first candlestick is inside of body of the second one
-						result	= { com: "Engulfing (Bull)", pattern: :ENGULFING_BULL}
+						result	= { com: "Engulfing (Bull)", figure: :ENGULFING_BULL}
 				end
 			end
 
 			# Engulfing, the Bear
 			if ( c1[:trend]==:BULL and c1[:bull] and c2[:trend]==:BULL and !c2[:bull] and # check direction and direction of candlestick
 				c1[:bodysize]<c2[:bodysize]) then # body of the third candlestick is bigger than that of the second one
-				# result	= { com: "Engulfing (Bear)", pattern: :ENGULFING_BEAR}
+				# result	= { com: "Engulfing (Bear)", figure: :ENGULFING_BEAR}
 				if ( c1[:close]<=c2[:open] and c1[:open]>c2[:close]) then # body of the first candlestick is inside of body of the second one
-						result	= { com: "Engulfing (Bear)", pattern: :ENGULFING_BEAR}
+						result	= { com: "Engulfing (Bear)", figure: :ENGULFING_BEAR}
 				end
 			end
 
@@ -110,7 +110,7 @@ def pattern( candle, position )
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and c2[:type]==:CAND_DOJI) then # check of "long" first candlestick and Doji candlestick
 				# result	= { com: "Harami Cross (Bull)"}
 				if ( c1[:close]<=c2[:open] and c1[:close]<=c2[:close] and c1[:open]>c2[:close]) then # Doji is inside of body of the first candlestick
-						result	= { com: "Harami Cross (Bull)", pattern: :HARAMI_CROSS_BULL}
+						result	= { com: "Harami Cross (Bull)", figure: :HARAMI_CROSS_BULL}
 				end
 			end
 			# Harami Cross, the Bear
@@ -118,7 +118,7 @@ def pattern( candle, position )
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and c2[:type]==:CAND_DOJI) then # check of "long" candlestick and Doji
 				# result	= { com: "Harami Cross (Bear)"}
 				if ( c1[:close]>=c2[:open] and c1[:close]>=c2[:close] and c1[:close]>=c2[:close]) then # Doji is inside of body of the first candlestick
-						result	= { com: "Harami Cross (Bear)", pattern: :HARAMI_CROSS_BEAR}
+						result	= { com: "Harami Cross (Bear)", figure: :HARAMI_CROSS_BEAR}
 				end
 			end
 			#------
@@ -128,7 +128,7 @@ def pattern( candle, position )
 				c2[:type]!=:CAND_DOJI and c1[:bodysize]>c2[:bodysize]) # the second candlestick is not Doji and body of the first candlestick is bigger than that of the second one
 				# result	= { com: "Harami (Bull)"}
 				if ( c1[:close]<=c2[:open] and c1[:close]<=c2[:close] and c1[:open]>c2[:close]) then # body of the second candlestick is inside of body of the first candlestick
-						result	= { com: "Harami (Bull)", pattern: :HARAMI_BULL}
+						result	= { com: "Harami (Bull)", figure: :HARAMI_BULL}
 				end
 			end
 			# Harami, the Bear
@@ -137,18 +137,18 @@ def pattern( candle, position )
 				c2[:type]!=:CAND_DOJI and c1[:bodysize]>c2[:bodysize]) then # the second candlestick is not Doji and body of the first candlestick is bigger than that of the second one
 				# result	= { com: "Harami (Bear)"}
 				if ( c1[:close]>=c2[:open] and c1[:close]>=c2[:close] and c1[:close]>=c2[:close]) then # Doji is inside of body of the first candlestick
-						result	= { com: "Harami (Bear)", pattern: :HARAMI_BEAR}
+						result	= { com: "Harami (Bear)", figure: :HARAMI_BEAR}
 				end
 			end
 			#------
 			# Doji Star, the Bull
 			if ( c1[:trend]==:BEAR and !c1[:bull] and # check direction of trend and direction of candlestick
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and c2[:type]==:CAND_DOJI) then # check first "long" candlestick and 2 doji
-				# result	= { com: "Doji Star the Bull", pattern: :DOJI_STAR_BULL}
+				# result	= { com: "Doji Star the Bull", figure: :DOJI_STAR_BULL}
 				if ( c1[:close]>=c2[:open]) then # Open price of Doji is lower or equal to close price of the first candlestick
-					result	= { com: "Doji Star the Bull", pattern: :DOJI_STAR_BULL}
+					result	= { com: "Doji Star the Bull", figure: :DOJI_STAR_BULL}
 				elsif ( c1[:close]>c2[:open] and c1[:close]>c2[:close]) then # Body of Doji is cut off the body of the first candlestick
-					result	= { com: "Doji Star the Bull", pattern: :DOJI_STAR_BULL}
+					result	= { com: "Doji Star the Bull", figure: :DOJI_STAR_BULL}
 				end
 			end
 
@@ -157,9 +157,9 @@ def pattern( candle, position )
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and c2[:type]==:CAND_DOJI) then # check first "long" candlestick and 2 doji
 				# result	= { com: "Doji Star (Bear)"}
 				if ( c1[:close]<=c2[:open]) then # # open price of Doji is higher or equal to close price of the first candlestick
-					result	= { com: "Doji Star the Bear", pattern: :DOJI_STAR_BEAR}
+					result	= { com: "Doji Star the Bear", figure: :DOJI_STAR_BEAR}
 				elsif ( c1[:close]<c2[:open] and c1[:close]<c2[:close]) # # body of Doji is cut off the body of the first candlestick
-					result	= { com: "Doji Star the Bear", pattern: :DOJI_STAR_BEAR}
+					result	= { com: "Doji Star the Bear", figure: :DOJI_STAR_BEAR}
 				end
 			end
 
@@ -169,9 +169,9 @@ def pattern( candle, position )
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and (c2[:type]==:CAND_LONG or c2[:type]==:CAND_MARIBOZU_LONG) and # check of "long" candlestick
 				c2[:close]>(c1[:close]+c1[:open])/2) then # close price of the second candle is higher than the middle of the first one
 				if ( c1[:close]>=c2[:open] and c2[:close]<=c1[:open]) then
-					result	= { com: "Piercing Line (Bull)", pattern: :PIERCING_LINE_BULL}
+					result	= { com: "Piercing Line (Bull)", figure: :PIERCING_LINE_BULL}
 				elsif ( c2[:open]<c1[:low] and c2[:close]<=c1[:open]) then # open price of the second candle is lower than LOW price of the first one
-					result	= { com: "Piercing Line (Bull)", pattern: :PIERCING_LINE_BULL}
+					result	= { com: "Piercing Line (Bull)", figure: :PIERCING_LINE_BULL}
 				end
 			end
 			# Dark Cloud Cover, the Bear
@@ -179,9 +179,9 @@ def pattern( candle, position )
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and (c2[:type]==:CAND_LONG or c2[:type]==:CAND_MARIBOZU_LONG) and # check of "long" candlestick
 				c2[:close]<(c1[:close]+c1[:open])/2) then # close price of 2-nd candlestick is lower than the middle of the body of the 1-st one
 				if ( c1[:close]<=c2[:open] and c2[:close]>=c1[:open]) then
-					result	= { com: "Dark Cloud Cover (Bear)", pattern: :DARK_CLOUD_COVER_BEAR}
+					result	= { com: "Dark Cloud Cover (Bear)", figure: :DARK_CLOUD_COVER_BEAR}
 				elsif ( c1[:high]<c2[:open] and c2[:close]>=c1[:open])
-					result	= { com: "Dark Cloud Cover (Bear)", pattern: :DARK_CLOUD_COVER_BEAR}
+					result	= { com: "Dark Cloud Cover (Bear)", figure: :DARK_CLOUD_COVER_BEAR}
 				end
 			end
 
@@ -190,28 +190,28 @@ def pattern( candle, position )
 			if ( c1[:trend]==:BEAR and !c1[:bull] and c2[:trend]==:BEAR and c2[:bull] and # check direction of trend and direction of candlestick
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and (c2[:type]==:CAND_LONG or c2[:type]==:CAND_MARIBOZU_LONG) and # check of "long" candlestick
 				c1[:close]==c2[:close] and c1[:bodysize]<c2[:bodysize] and c1[:low]>c2[:open]) then # close prices are equal, size of the first candlestick is smaller than that of the second one; open price of the second one is lower than minimum of the first one
-				result	= { com: "Meeting Lines (Bull)", pattern: :MEETING_LINES_BULL}
+				result	= { com: "Meeting Lines (Bull)", figure: :MEETING_LINES_BULL}
 			end
 
 			# Meeting Lines, the Bear
 			if ( c1[:trend]==:BULL and c1[:bull] and c2[:trend]==:BULL and !c2[:bull] and # check direction and direction of candlestick
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and # check of "long" candlestick
 				c1[:close]==c2[:close] and c1[:bodysize]<c2[:bodysize] and c1[:high]<c2[:open]) then # # close prices are equal, size of the first one is smaller than that of the second one, open price of the second one is higher than the maximum of the first one
-				result	= { com: "Meeting Lines (Bear)", pattern: :MEETING_LINES_BEAR}
+				result	= { com: "Meeting Lines (Bear)", figure: :MEETING_LINES_BEAR}
 			end
 
 			#------
 			# Matching Low, the Bull
 			if ( c1[:trend]==:BEAR and !c1[:bull] and c2[:trend]==:BEAR and !c2[:bull] and # check direction of trend and direction of candlestick
 				c1[:close]==c2[:close] and c1[:bodysize]>c2[:bodysize]) then # close price are equal, size of the first one is greater than that of the second one
-				result	= { com: "Matching Low (Bull)", pattern: :MATCHING_LOW_BULL}
+				result	= { com: "Matching Low (Bull)", figure: :MATCHING_LOW_BULL}
 			end
 			#------
 			# Homing Pigeon, the Bull
 			if ( c1[:trend]==:BEAR and !c1[:bull] and c2[:trend]==:BEAR and !c2[:bull] and # check direction of trend and direction of candlestick
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and # check of "long" candlestick
 				c1[:close]<c2[:close]  and  c1[:open]>c2[:open]) then # body of the second candlestick is inside of body of the first one
-				result	= { com: "Homing Pigeon (Bull)", pattern: :HOMING_PIGEON_BULL}
+				result	= { com: "Homing Pigeon (Bull)", figure: :HOMING_PIGEON_BULL}
 			end
 
 	## Continuation Models */
@@ -221,33 +221,33 @@ def pattern( candle, position )
 			if ( !c1[:bull] and c2[:bull] and # check direction of trend and direction of candlestick
 				c1[:type]==:CAND_MARIBOZU_LONG and c2[:type]==:CAND_MARIBOZU_LONG and # two maribozu
 				c1[:open]<c2[:open]) then # gap between them
-				result	= { com: "Kicking (Bull)", pattern: :KICKING_BULL}
+				result	= { com: "Kicking (Bull)", figure: :KICKING_BULL}
 			end
 			# Kicking, the Bear
 			if ( c1[:bull] and !c2[:bull] and # check direction of trend and direction of candlestick
 				c1[:type]==:CAND_MARIBOZU_LONG and c2[:type]==:CAND_MARIBOZU_LONG and # two maribozu
 				c1[:open]>c2[:open]) then # gap between them
-				result	= { com: "Kicking (Bear)", pattern: :KICKING_BEAR}
+				result	= { com: "Kicking (Bear)", figure: :KICKING_BEAR}
 			end
 			#------ Check of module of the neck line
 			if ( c1[:trend]==:BEAR and !c1[:bull] and c2[:bull] and # check direction of trend and direction of candlestick
 				(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG)) then # first candlesticks is "long"
 					# On Neck Line, the Bear
 					if ( c2[:open]<c1[:low] and c2[:close]==c1[:low]) then # second candlestick is opened below the first one and is closed at the minimum level of the first one
-						result	= { com: "On Neck Line (Bear)", pattern: :ON_NECK_LINE_BEAR}
+						result	= { com: "On Neck Line (Bear)", figure: :ON_NECK_LINE_BEAR}
 					else
 						# In Neck Line, the Bear
 						if ( c1[:trend]==:BEAR and !c1[:bull] and c2[:bull] and # check direction of trend and direction of candlestick
 								(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and # first candlestick is "long"
 								c1[:bodysize]>c2[:bodysize] and # body of the second candlestick is smaller than body of the first one
 								c2[:open]<c1[:low] and c2[:close]>=c1[:close] and c2[:close]<(c1[:close]+c1[:bodysize]*0.01)) then # second candlestick is opened below the first one and is closed slightly higher the closing of the first one
-									result	= { com: "In Neck Line (Bear)", pattern: :IN_NECK_LINE_BEAR}
+									result	= { com: "In Neck Line (Bear)", figure: :IN_NECK_LINE_BEAR}
 						else
 								# Thrusting Line, the Bear
 								if ( c1[:trend]==:BEAR and !c1[:bull] and c2[:bull] and # check direction of trend and direction of candlestick
 								(c1[:type]==:CAND_LONG or c1[:type]==:CAND_MARIBOZU_LONG) and # first candlestick is "long"
 								c2[:open]<c1[:low] and c2[:close]>c1[:close] and c2[:close]<(c1[:open]+c1[:close])/2) then # the second candlestick is opened below the first one and is closed above the closing of the first one, bu below its middle
-									result	= { com: "Thrusting Line (Bear)", pattern: :THRUSTING_LINE_BEAR}
+									result	= { com: "Thrusting Line (Bear)", figure: :THRUSTING_LINE_BEAR}
 								end
 						end
 					end
