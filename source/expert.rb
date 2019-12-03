@@ -7,22 +7,22 @@ $position = 0
 $position_time = 0
 
 # period in seconds
-$candle_period = 10 * 1000
-TREND_PERIOD = 3 * 1000
+$candle_period = 8 * 1000
+TREND_PERIOD = 1 * 1000
 
-CHK_STOP_HISTERESIS = 2 * 1000
-STOP_LOSS = 1.0
+CHK_STOP_HISTERESIS = 8 * 1000
+STOP_LOSS = 1.5
 
-CHK_GAIN_HISTERESIS = 8 * 1000
-GAIN_MIN = 3.0
-SUM_THRESHOLD = 1.1
+CHK_GAIN_HISTERESIS = 12 * 1000
+GAIN_MIN = 2.0
+SUM_THRESHOLD = 1.2
 
 # period in candles
 SMA_PERIOD = 10
 BODY_PERIOD = 8
 exit "error body period" if BODY_PERIOD > SMA_PERIOD
 
-BODY_SIZE = 0.5
+BODY_SIZE = 1.5
 
 $renko = []
 $candle = []
@@ -112,6 +112,7 @@ def update_candle( trade )
 		$candle[$position] = {
 			time:  $position_time,
 			time_open: trade_time,
+			time_close: trade_time,
 			open:  trade_price,
 			close: trade_price,
 			high:  trade_price,
@@ -119,6 +120,8 @@ def update_candle( trade )
 			trade_qty: trade_qty,
 			sum_bull: ( trade_bull ? trade_qty : 0.0 ),
 			sum_bear: ( (!trade_bull) ? trade_qty : 0.0 ),
+			market:   :NONE,
+			market_chk: :NONE,
 			bodysize: 0
 		}
 	end
@@ -257,7 +260,7 @@ def check_trend( candle, position )
 		profit = 0
 	end
 
-	hister = c1[:time_close]-$start_trade_time
+	hister			 = c1[:time_close] - $start_trade_time
 	stp_gain_min	= (hister > CHK_GAIN_HISTERESIS) and (profit < GAIN_MIN)
 	stp_loss		= (hister > CHK_STOP_HISTERESIS) and (profit < STOP_LOSS)
 
