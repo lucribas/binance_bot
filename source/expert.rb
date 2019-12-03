@@ -248,7 +248,7 @@ def make_forecast( candle, position )
 end
 
 
-def update_profit( profif )
+def update_profit( profit: )
 	$trades_num = $trades_num + 1
 	$sum_profit_pos = $sum_profit_pos + (profit>0) ? profit : 0
 	$sum_profit_neg = $sum_profit_pos + (profit<0) ? profit : 0
@@ -259,10 +259,10 @@ def get_profit_sts()
 	return "%d,%.2f,%.2f,%.2f" % [$trades_num, $sum_profit_pos, $sum_profit_neg,$sum_profit]
 end
 
-def trade_close_bear( time, price, profit, msg )
+def trade_close_bear( time:, price:, profit:, msg: )
 	if $on_charge == :BEAR then
 		$start_trade_time = time
-		update_profit( profit )
+		update_profit( profit: profit )
 		$on_charge = :NONE
 		$log.info "N"*30
 		$log.info msg.yellow
@@ -273,10 +273,10 @@ def trade_close_bear( time, price, profit, msg )
 end
 
 
-def trade_close_bull( time, price, profit, msg )
+def trade_close_bull( time:, price:, profit:, msg: )
 	if $on_charge == :BULL then
 		$start_trade_time = time
-		update_profit( profit )
+		update_profit( profit: profit )
 		$on_charge = :NONE
 		$log.info "N"*30
 		$log.info msg.yellow
@@ -286,7 +286,7 @@ def trade_close_bull( time, price, profit, msg )
 	end
 end
 
-def trade_start_bull( time, price, msg )
+def trade_start_bull( time:, price:, msg: )
 	if $on_charge == :NONE then
 		$start_trade_time = time
 		$start_bull_price = prince
@@ -299,7 +299,7 @@ def trade_start_bull( time, price, msg )
 end
 
 
-def trade_start_bear( time, price, msg )
+def trade_start_bear( time:, price:, msg: )
 	if $on_charge == :NONE then
 		$start_trade_time = time
 		$start_bear_price = prince
