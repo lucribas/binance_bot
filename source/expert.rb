@@ -255,8 +255,8 @@ def update_profit( profit: )
 	$sum_profit = $sum_profit + profit
 end
 
-def get_profit_sts()
-	return "profit=%.2f  [%d, %.2f, %.2f]  liq=%.2f" % [$trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit]
+def get_profit_sts( profit: )
+	return "profit=%.2f  [%d, %.2f, %.2f]  liq=%.2f" % [profit, $trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit]
 end
 
 def trade_close_bear( time:, price:, profit:, msg: )
@@ -267,7 +267,7 @@ def trade_close_bear( time:, price:, profit:, msg: )
 		$log.info "N"*30
 		$log.info msg.yellow
 		send_trade_info	msg
-		send_trade_info "CLOSE BEAR: buy %.2f\t\t%s" % [price, get_profit_sts() ]
+		send_trade_info "CLOSE BEAR: buy %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ]
 		send_trade_info_send()
 	end
 end
@@ -281,7 +281,7 @@ def trade_close_bull( time:, price:, profit:, msg: )
 		$log.info "N"*30
 		$log.info msg.yellow
 		send_trade_info	msg
-		send_trade_info "CLOSE BULL: sell %.2f\t\t%s" % [price, get_profit_sts() ]
+		send_trade_info "CLOSE BULL: sell %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ]
 		send_trade_info_send()
 	end
 end
