@@ -9,28 +9,28 @@ require 'telegram/bot'
 $position = 0
 $position_time = 0
 $trades_num  = 0
-$sum_profit_pos = 0
-$sum_profit_neg = 0
+$sum_profit_pos = 0.0
+$sum_profit_neg = 0.0
 
 # period in seconds
-$candle_period = 8 * 1000
-TREND_PERIOD = 1 * 1000
+$candle_period = 10 * 1000
+TREND_PERIOD = 2 * 1000
 
 CHK_STOP_HISTERESIS = 8 * 1000
 STOP_LOSS = 1.5
 
-CHK_GAIN_HISTERESIS = 12 * 1000
-GAIN_MIN = 2.0
-SUM_THRESHOLD = 1.2
+CHK_GAIN_HISTERESIS = 30 * 1000
+GAIN_MIN = 5.0
+SUM_THRESHOLD = 1.6
 
 SEPAR = "-"*20+"\n"
 
 # period in candles
-SMA_PERIOD = 10
-BODY_PERIOD = 8
+SMA_PERIOD = 12
+BODY_PERIOD = 9
 exit "error body period" if BODY_PERIOD > SMA_PERIOD
 
-BODY_SIZE = 1.5
+BODY_SIZE = 2.0
 
 $renko = []
 $candle = []
@@ -69,7 +69,7 @@ end
 sent_telegram( "connected!" ) if $telegram_en
 
 def send_trade_info( message )
-	$message_buffer = $message_buffer + message
+	$message_buffer = $message_buffer + message + "\n"
 end
 
 def send_trade_info_send
@@ -250,13 +250,13 @@ end
 
 def update_profit( profit: )
 	$trades_num = $trades_num + 1
-	$sum_profit_pos = $sum_profit_pos + (profit>0) ? profit : 0
-	$sum_profit_neg = $sum_profit_pos + (profit<0) ? profit : 0
+	$sum_profit_pos = $sum_profit_pos + ( (profit>0) ? profit : 0.0 )
+	$sum_profit_neg = $sum_profit_neg + ( (profit<0) ? profit : 0.0 )
 	$sum_profit = $sum_profit + profit
 end
 
 def get_profit_sts()
-	return "%d,%.2f,%.2f,%.2f" % [$trades_num, $sum_profit_pos, $sum_profit_neg,$sum_profit]
+	return "profit=%.2f  [%d, %.2f, %.2f]  liq=%.2f" % [$trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit]
 end
 
 def trade_close_bear( time:, price:, profit:, msg: )
@@ -281,7 +281,7 @@ def trade_close_bull( time:, price:, profit:, msg: )
 		$log.info "N"*30
 		$log.info msg.yellow
 		send_trade_info	msg
-		send_trade_info "CLOSE BULL: buy %.2f\t\t%s" % [price, get_profit_sts() ]
+		send_trade_info "CLOSE BULL: sell %.2f\t\t%s" % [price, get_profit_sts() ]
 		send_trade_info_send()
 	end
 end
@@ -289,11 +289,11 @@ end
 def trade_start_bull( time:, price:, msg: )
 	if $on_charge == :NONE then
 		$start_trade_time = time
-		$start_bull_price = prince
+		$start_bull_price = price
 		$on_charge = :BULL
 		$log.info msg.yellow
 		send_trade_info	msg
-		send_trade_info SEPAR + "START BULL: sell %.2f" % price
+		send_trade_info SEPAR + "START BULL: buy %.2f" % price
 		send_trade_info_send()
 	end
 end
@@ -302,7 +302,7 @@ end
 def trade_start_bear( time:, price:, msg: )
 	if $on_charge == :NONE then
 		$start_trade_time = time
-		$start_bear_price = prince
+		$start_bear_price = price
 		$on_charge = :BEAR
 		$log.info msg.yellow
 		send_trade_info	msg
@@ -333,13 +333,13 @@ def check_trend( candle, position )
 	elsif $on_charge == :BULL then
 		profit = c1[:close] - $start_bull_price
 	else
-		profit = 0
+		profit = 0.0
 	end
 
 	#--------------------------------------------------------------------------------------------
 	hister			= c1[:time_close] - $start_trade_time
-	stp_gain_min	= (hister > CHK_GAIN_HISTERESIS) and (profit < GAIN_MIN)
-	stp_loss		= (hister > CHK_STOP_HISTERESIS) and (profit < STOP_LOSS)
+	stp_gain_min	= (hister > CHK_GAIN_HISTERESIS) and (profit < GAIN_MIN) and $on_charge != :NONE
+	stp_loss		= (hister > CHK_STOP_HISTERESIS) and (profit < STOP_LOSS) and $on_charge != :NONE
 	c3_mkt_bull		= c3[:market_chk] == :BULL
 	c3_mkt_bear		= c3[:market_chk] == :BEAR
 	c2_mkt_bull		= c2[:market_chk] == :BULL
@@ -379,6 +379,10 @@ def check_trend( candle, position )
 		$log.info "waiting to confirm figure %s: sum_bull=%.2f sum_bear=%.2f" % [ c2[:reversion].to_s, c1[:sum_bull], c1[:sum_bear] ]
 	end
 
+	rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
+	rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
+	rule_msg = rule_bull_msg + " " + rule_bear_msg
+	$log.info rule_msg
 	# fast close trade if Change trend
 	if (
 			rule_bull_01 or
@@ -388,16 +392,19 @@ def check_trend( candle, position )
 			rule_bull_05 or
 			rule_bull_06
 		) then
-			msg = "rule_bull_01: FORECAST_BULL" if rule_bull_01
-			msg = "rule_bull_02: MKT x3" if rule_bull_02
-			msg = "rule_bull_03: FIGURE REVERSION" if rule_bull_03
-			msg = "rule_bull_04: TREND" if rule_bull_04
-			msg = "rule_bull_05: STOP_GAIN" if rule_bull_05
-			msg = "rule_bull_06: STOP_LOSS" if rule_bull_06
+			msg = "rule_bull_01: FORECAST_BULL " if rule_bull_01
+			msg = "rule_bull_02: MKT x3 " if rule_bull_02
+			msg = "rule_bull_03: FIGURE REVERSION " if rule_bull_03
+			msg = "rule_bull_04: TREND " if rule_bull_04
+			msg = "rule_bull_05: STOP_GAIN " if rule_bull_05
+			msg = "rule_bull_06: STOP_LOSS " if rule_bull_06
+			msg = "%s (%s)-%s" % [msg, rule_bull_msg, rule_bear_msg]
 			trade_close_bear( time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 			# reversion confirmed
-			trade_start_bull( time: c1[:time_close], price: c1[:close], msg: msg )
-			return
+			if $on_charge != :BULL then
+				trade_start_bull( time: c1[:time_close], price: c1[:close], msg: msg )
+				return
+			end
 	end
 
 	# fast close trade if Change trend
@@ -409,16 +416,19 @@ def check_trend( candle, position )
 			rule_bear_05 or
 			rule_bear_06
 		) then
-			msg = "rule_bear_01: FORECAST_BULL" if rule_bear_01
-			msg = "rule_bear_02: MKT x3" if rule_bear_02
-			msg = "rule_bear_03: FIGURE REVERSION" if rule_bear_03
-			msg = "rule_bear_04: TREND" if rule_bear_04
-			msg = "rule_bear_05: STOP_GAIN" if rule_bear_05
-			msg = "rule_bear_06: STOP_LOSS" if rule_bear_06
-			trade_close_bull( time: c1[:time_close], price: c1[:close], profit: profit, mgs: msg )
+			msg = "rule_bear_01: FORECAST_BULL " if rule_bear_01
+			msg = "rule_bear_02: MKT x3 " if rule_bear_02
+			msg = "rule_bear_03: FIGURE REVERSION " if rule_bear_03
+			msg = "rule_bear_04: TREND " if rule_bear_04
+			msg = "rule_bear_05: STOP_GAIN " if rule_bear_05
+			msg = "rule_bear_06: STOP_LOSS " if rule_bear_06
+			msg = "%s %s-(%s)" % [msg, rule_bull_msg, rule_bear_msg]
+			trade_close_bull( time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 			# reversion confirmed
-			trade_start_bear( time: c1[:time_close], price: c1[:close], mgs: msg )
-			return
+			if $on_charge != :BEAR then
+				trade_start_bear( time: c1[:time_close], price: c1[:close], msg: msg )
+				return
+			end
 	end
 
 
