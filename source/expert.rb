@@ -9,11 +9,17 @@ $position_time = 0
 # period in seconds
 $candle_period = 20 * 1000
 TREND_PERIOD = 5 * 1000
+
+CHK_STOP_HISTERESIS = 6 * 1000
+STOP_LOSS = 1.0
+
+CHK_GAIN_HISTERESIS = 30 * 1000
+GAIN_MIN = 3.0
+
 # period in candles
 SMA_PERIOD = (3 * 60 * 1000/$candle_period).to_i
 BODY_PERIOD = (20 * 1000/$candle_period).to_i
-STOP_LOSS = 1.0
-BODY_SIZE = 0.3
+BODY_SIZE = 3.0
 
 $renko = []
 $candle = []
@@ -24,6 +30,7 @@ $on_charge = :NONE
 
 $start_bear_price = 0.0
 $start_bull_price = 0.0
+$start_trade_time = 0.0
 $sum_profit = 0.0
 require_relative 'candlestick_patterns'
 
@@ -75,6 +82,7 @@ def update_candle( trade )
 
 		c[:market]	=	(c[:open] == c[:close]) ? :LATERAL : (
 							(c[:open] < c[:close]) ? :BULL : :BEAR )
+		c[:market_chk] = (c[:bodysize] > BODY_SIZE) ? c[:market] : :NONE
 
 		if trade_time > ($position_time + TREND_PERIOD) then
 			check_trend($candle, $position)
@@ -175,13 +183,13 @@ def make_forecast( candle, position )
 	#--- DOWN SMA
 	if c1[:trend] == :BEAR then
 		# detect a trend
-		if c1[:market] == :BEAR then
+		if c1[:market_chk] == :BEAR then
 			c1[:forecast] = :BEAR
 		end
 	#--- UP SMA
 	elsif c1[:trend] == :BULL then
 		# detect a trend
-		if 	c1[:market] == :BULL then
+		if 	c1[:market_chk] == :BULL then
 			c1[:forecast] = :BULL
 		end
 	end
@@ -234,45 +242,62 @@ def check_trend( candle, position )
 	else
 		profit = 0
 	end
+	hister = c[:time_close]-$start_trade_time
+	stp_gain_min	= (hister > CHK_GAIN_HISTERESIS) and (profit < GAIN_MIN)
+	stp_loss		= (hister > CHK_STOP_HISTERESIS) and (profit < STOP_LOSS)
 
+	#--------------------------------------------------------------------------------------------
 	# fast close trade if Change trend
 	if $on_charge == :BEAR and
 		(
-			c[:market] == :BULL and c[:bodysize] > BODY_SIZE or  # current candle changed or
-			c2[:market] == :BULL and c2[:bodysize] > BODY_SIZE or  # previous candle
-			c2[:trend] == :BULL or	# trend changed
-			profit < -STOP_LOSS ) then		# profit reached
-		if c[:sum_bull] > 1.0 and
-			c[:sum_bull] >= 1.6*c[:sum_bear] then
-			$sum_profit = $sum_profit + profit
-			$on_charge = :NONE
-			# reversion confirmed
-			$log.info "N"*30
-			$log.info "SHORT_BULL x3 REVERSION CONFIRMED!".yellow
-			send_trade_info "CLOSE BEAR: buy %.2f\t\tprofit = %.2f\t\tSUM_profit = %.2f" % [c[:close] , profit, $sum_profit ]
-			return
-		end
+			c2[:market_chk] == :BULL and
+			c[:market_chk] == :BULL or  # current candle changed or
+
+			c2[:trend] == :BULL and
+			c[:market_chk] == :BULL or	# trend changed
+
+			stp_gain_min or
+
+			stp_loss
+			) then		# profit reached
+			if c[:sum_bull] > 1.0 and
+				c[:sum_bull] >= 1.6*c[:sum_bear] then
+				$sum_profit = $sum_profit + profit
+				$on_charge = :NONE
+				# reversion confirmed
+				$log.info "N"*30
+				$log.info "SHORT_BULL x3 REVERSION CONFIRMED! stp_gain_min=#{stp_gain_min}, stp_loss=#{stp_loss}".yellow
+				send_trade_info "CLOSE BEAR: buy %.2f\t\tprofit = %.2f\t\tSUM_profit = %.2f" % [c[:close] , profit, $sum_profit ]
+				return
+			end
 	end
 	# fast close trade if Change trend
 	if $on_charge == :BULL and
 		(
-			c[:market] == :BEAR and c[:bodysize] > BODY_SIZE or  # current candle changed or
-			c2[:market] == :BEAR and c2[:bodysize] > BODY_SIZE or  # previous candle
-			c2[:trend] == :BEAR or	# trend changed
-			profit < -STOP_LOSS ) then		# profit reached
-		if c[:sum_bear] > 1.0 and
-			c[:sum_bear] >= 1.6*c[:sum_bull] then
-			$sum_profit = $sum_profit + profit
-			$on_charge = :NONE
+			c2[:market_chk] == :BEAR and
+			c[:market_chk] == :BEAR or  # current candle changed or
 
-			# reversion confirmed
-			$log.info "N"*30
-			$log.info "SHORT_BEAR x3 REVERSION CONFIRMED!".yellow
-			send_trade_info "CLOSE BULL: buy %.2f\t\tprofit = %.2f\t\tSUM_profit = %.2f" % [c[:close] , profit, $sum_profit ]
-			return
-		end
+			c2[:trend] == :BEAR and
+			c[:market_chk] == :BEAR or	# trend changed
+
+			stp_gain_min or
+
+			stp_loss
+			) then		# profit reached
+			if c[:sum_bear] > 1.0 and
+				c[:sum_bear] >= 1.6*c[:sum_bull] then
+				$sum_profit = $sum_profit + profit
+				$on_charge = :NONE
+
+				# reversion confirmed
+				$log.info "N"*30
+				$log.info "SHORT_BEAR x3 REVERSION CONFIRMED! stp_gain_min=#{stp_gain_min}, stp_loss=#{stp_loss}".yellow
+				send_trade_info "CLOSE BULL: buy %.2f\t\tprofit = %.2f\t\tSUM_profit = %.2f" % [c[:close] , profit, $sum_profit ]
+				return
+			end
 	end
 
+	#--------------------------------------------------------------------------------------------
 	# start new trade in NEW TREND
 	if !c2.nil? and !c2[:forecast].nil? then
 		# $log.info "-"*20
@@ -283,11 +308,12 @@ def check_trend( candle, position )
 		# # binding.pry
 		# $log.info "-"*20
 
-		if c3[:forecast] == :BULL and $on_charge != :BULL and
-			c2[:market] == :BULL and
-			c[:bodysize] > BODY_SIZE and
-			c[:sum_bull] > 1.0 and
-			c[:sum_bull] >= 1.6*c[:sum_bear] then
+		if (
+				$on_charge != :BULL and
+				c3[:forecast] == :BULL and
+				c2[:market_chk] == :BULL and
+				c[:market_chk] == :BULL and c[:sum_bull] > 1.0 and	c[:sum_bull] >= 1.6*c[:sum_bear]
+			) then
 			# forecast confirmed
 			if $on_charge == :BEAR then
 				$sum_profit = $sum_profit + profit
@@ -297,13 +323,15 @@ def check_trend( candle, position )
 			$log.info "BULL FORECAST C3 CONFIRMED!".yellow
 			send_trade_info "START BULL: buy %.2f" % c[:close]
 			$start_bull_price = c[:close]
+			$start_trade_time = c[:time_close]
 			$on_charge = :BULL
 			return
-		elsif c3[:forecast] == :BEAR and $on_charge != :BEAR and
-			c2[:market] == :BEAR and
-			c[:bodysize] > BODY_SIZE and
-			c[:sum_bear] > 1.0 and
-			c[:sum_bear] >= 1.6*c[:sum_bull] then
+		elsif (
+				$on_charge != :BEAR and
+				c3[:forecast] == :BEAR and
+				c2[:market_chk] == :BEAR and
+				c[:market_chk] == :BEAR and c[:sum_bear] > 1.0 and	c[:sum_bear] >= 1.6*c[:sum_bull]
+			) then
 			# forecast confirmed
 			if $on_charge == :BULL then
 				$sum_profit = $sum_profit + profit
@@ -313,20 +341,20 @@ def check_trend( candle, position )
 			$log.info "BEAR FORECAST C3 CONFIRMED!".yellow
 			send_trade_info "START BEAR: sell %.2f" % c[:close]
 			$start_bear_price = c[:close]
+			$start_trade_time = c[:time_close]
 			$on_charge = :BEAR
 			return
 		end
 	end
 
 	# start new trade in NEW TREND
-	if !c2.nil? and !c3.nil? and
-		$on_charge != :BULL and
-		c3[:market] == :BULL and
-		c2[:market] == :BULL and
-		c2[:trend] == :BULL and
-		c[:bodysize] > BODY_SIZE and
-		c[:sum_bull] > 1.0 and
-		c[:sum_bull] >= 1.6*c[:sum_bear] then
+	if (
+			$on_charge != :BULL and
+			!c2.nil? and !c3.nil? and
+			c3[:market_chk] == :BULL and
+			c2[:market_chk] == :BULL and c2[:trend] == :BULL and
+			c[:market_chk] == :BULL and c[:sum_bull] > 1.0 and c[:sum_bull] >= 1.6*c[:sum_bear]
+		) then
 		# forecast confirmed
 		if $on_charge == :BEAR then
 			$sum_profit = $sum_profit + profit
@@ -336,18 +364,18 @@ def check_trend( candle, position )
 		$log.info "BULL TREND c3 c2 CONFIRMED!".yellow
 		send_trade_info "START BULL: buy %.2f" % c[:close]
 		$start_bull_price = c[:close]
+		$start_trade_time = c[:time_close]
 		$on_charge = :BULL
 		return
 	end
 
-	if !c2.nil? and !c3.nil? and
-		$on_charge != :BEAR and
-		c3[:market] == :BEAR and
-		c2[:trend] == :BEAR and
-		c2[:market] == :BEAR and
-		c[:bodysize] > BODY_SIZE and
-		c[:sum_bear] > 1.0 and
-		c[:sum_bear] >= 1.6*c[:sum_bull] then
+	if (
+			$on_charge != :BEAR and
+			!c2.nil? and !c3.nil? and
+			c3[:market_chk] == :BEAR and
+			c2[:market_chk] == :BEAR and c2[:trend] == :BEAR and
+			c[:market_chk] == :BEAR and c[:sum_bear] > 1.0 and c[:sum_bear] >= 1.6*c[:sum_bull]
+		) then
 		# forecast confirmed
 		if $on_charge == :BULL then
 			$sum_profit = $sum_profit + profit
@@ -357,6 +385,7 @@ def check_trend( candle, position )
 		$log.info "BEAR TREND c3 c2 CONFIRMED!".yellow
 		send_trade_info "START BEAR: sell %.2f" % c[:close]
 		$start_bear_price = c[:close]
+		$start_trade_time = c[:time_close]
 		$on_charge = :BEAR
 		return
 	end
@@ -364,10 +393,11 @@ def check_trend( candle, position )
 	if !c2.nil? and !c2[:reversion].nil? then
 		$log.info "waiting to confirm reversion %s: sum_bull=%.2f sum_bear=%.2f" % [ c2[:pattern][:figure].to_s, c[:sum_bull], c[:sum_bear] ]
 
-		if c2[:reversion] == :BULL and $on_charge != :BULL and
-			c[:bodysize] > BODY_SIZE and
-			c[:sum_bull] > 1.0 and
-			c[:sum_bull] >= 1.6*c[:sum_bear] then
+		if (
+				$on_charge != :BULL and
+				c2[:reversion] == :BULL and
+				c[:market_chk] == :BULL and c[:sum_bull] > 1.0 and	c[:sum_bull] >= 1.6*c[:sum_bear]
+			) then
 			# reversion confirmed
 			$log.info "N"*30
 			$log.info ("BULL %s REVERSION CONFIRMED!" % c2[:pattern][:figure].to_s ).yellow
@@ -377,12 +407,14 @@ def check_trend( candle, position )
 			end
 			send_trade_info "START BULL: buy %.2f" % c[:close]
 			$start_bull_price = c[:close]
+			$start_trade_time = c[:time_close]
 			$on_charge = :BULL
 			return
-		elsif c2[:reversion] == :BEAR  and $on_charge != :BEAR and
-			c[:bodysize] > BODY_SIZE and
-			c[:sum_bear] > 1.0 and
-			c[:sum_bear] >= 1.6*c[:sum_bull] then
+		elsif (
+				$on_charge != :BEAR and
+				c2[:reversion] == :BEAR  and
+				c[:market_chk] == :BEAR and c[:sum_bear] > 1.0 and c[:sum_bear] >= 1.6*c[:sum_bull]
+			) then
 			# reversion confirmed
 			if $on_charge == :BULL then
 				$sum_profit = $sum_profit + profit
@@ -392,6 +424,7 @@ def check_trend( candle, position )
 			$log.info ("BEAR %s REVERSION CONFIRMED!" % c2[:pattern][:figure].to_s ).yellow
 			send_trade_info "START BEAR: sell %.2f" % c[:close]
 			$start_bear_price = c[:close]
+			$start_trade_time = c[:time_close]
 			$on_charge = :BEAR
 			return
 		end
