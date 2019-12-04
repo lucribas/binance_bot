@@ -18,10 +18,10 @@ $candle_period = 20 * 1000
 TREND_PERIOD = 2 * 1000
 
 CHK_STOP_HISTERESIS = 4 * 1000
-STOP_LOSS = 1.5
+STOP_LOSS = -5.0
 
-CHK_GAIN_HISTERESIS = 8 * 1000
-GAIN_MIN = 3.0
+CHK_GAIN_HISTERESIS = 20 * 1000
+GAIN_MIN = 2.0
 SUM_THRESHOLD = 1.6
 
 VOL_SIZE = 3.0
@@ -266,7 +266,7 @@ def update_profit( profit: )
 end
 
 def get_profit_sts( profit: )
-	return "profit=%.2f  [%d, %.2f, %.2f]  liq=%.2f" % [profit, $trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit]
+	return "profit=%.2f  [%d, %.2f, %.2f]  liq=%.2f  efic=%.4f" % [profit, $trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit, $sum_profit/$trades_num]
 end
 
 def trade_close_bear( time:, price:, profit:, msg: )
