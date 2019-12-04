@@ -25,6 +25,9 @@ $trade = StdoutLog.new($debug, $log_file_name)
 
 $rec_file_name = "rec/TRADE_" + $timestamp + ".dmp"
 $rec_trade = RecordTrade.new( $rec_file_name )
+
+# windows: $ENV:RECORD_ONLY=1
+# linux: export RECORD_ONLY=1
 $record_only = ENV.include?("RECORD_ONLY")
 
 def format_time( evt_time )
@@ -164,7 +167,7 @@ EM.run do
 
 			trade_obj = { :price => obj_data["p"], :time => trade_time, :event => event_time, :qty => obj_data["q"], :bull => bull }
 			$rec_trade.record( trade_obj )
-			update_candle( trade_obj ) if $record_only
+			update_candle( trade_obj ) if !$record_only
 
 			f_val = obj_data["q"].to_f
 			if true then

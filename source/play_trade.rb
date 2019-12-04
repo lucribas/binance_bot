@@ -53,7 +53,7 @@ $log = StdoutLog.new($debug, $log_file_name)
 $log_file_name = "log/TRADE_" + $timestamp + ".log"
 $trade = StdoutLog.new($debug, $log_file_name)
 
-$rec_file_name = "rec/TRADE_20191203_235434.dmp"
+$rec_file_name = "rec/TRADE_20191204_001317.dmp"
 $rec_trade = PlayTrade.new( $rec_file_name )
 
 trade_obj = $rec_trade.read()
