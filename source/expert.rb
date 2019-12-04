@@ -18,8 +18,8 @@ $candle_period = 20 * 1000
 TREND_PERIOD = 2 * 1000
 
 CHK_VOL_TH = 0.1
-CHK_STOP_HISTERESIS = 0 * 1000
-STOP_LOSS = 0.0
+CHK_STOP_HISTERESIS = 2 * 1000
+STOP_LOSS = 1.0
 
 CHK_GAIN_HISTERESIS = 20 * 1000
 GAIN_MIN = 2.0
@@ -35,7 +35,7 @@ VOL_AVG_PERIOD = 6
 SEPAR = "-"*20
 
 # period in candles
-SMA_PERIOD = 12
+SMA_PERIOD = 6*10
 BODY_AVG_PERIOD = 11
 exit "error body period" if BODY_AVG_PERIOD > SMA_PERIOD
 
@@ -273,14 +273,13 @@ def check_trend( candle, position )
 		$log.info "waiting for SMA_PERIOD: #{position} < #{SMA_PERIOD}"
 		return
 	end
-	return if position <= 3
-
-	c1 = candle[position]
-	return if c1.nil?
 
 	# forecast, trend, reversion only available in c2
-	c2 = candle[position-1] if position > 1
-	c3 = candle[position-2] if position > 1
+	return if position <= 10
+	c1 = candle[position]
+	c2 = candle[position-1]
+	c3 = candle[position-2]
+	c4 = candle[position-3]
 
 	if $on_charge == :BEAR then
 		profit = $start_bear_price - c1[:close]
@@ -367,6 +366,13 @@ def check_trend( candle, position )
 	# c1[:flags_bull] = [(rule_bull_01 or c1[:flags_bull][0]), (rule_bull_02 or c1[:flags_bear][1])]
 
 
+	# new indicators
+	pos_adj = (c1[:time_close] % $candle_period).to_f
+	vol_adj = ((pos_adj>0) ? ($candle_period / pos_adj) : 1)
+	# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
+	vol_increased = ( ( c4[:trade_qty] < c4[:trade_qty] ) and ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
+	# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) )
+
 	if c2_fore_bull and ($on_charge != :BULL) then
 		$log.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bear] ]
 	end
@@ -412,7 +418,7 @@ def check_trend( candle, position )
 		binding.pry if rule_bear_close_msg == "000"
 	end
 	# start confirmed
-	if ($on_charge != :BULL and rule_bull_start) then
+	if ($on_charge != :BULL and rule_bull_start and vol_increased) then
 		trade_start_bull( start_rule: rule_bull_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
 		return
 	end
@@ -439,7 +445,7 @@ def check_trend( candle, position )
 	if ($on_charge == :BULL and rule_bull_close) then
 		trade_close_bull( close_rule: rule_bull_close_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 	end
-	if ($on_charge != :BEAR and rule_bear_start) then
+	if ($on_charge != :BEAR and rule_bear_start and vol_increased) then
 		trade_start_bear( start_rule: rule_bear_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
 		return
 	end
