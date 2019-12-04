@@ -370,7 +370,7 @@ def check_trend( candle, position )
 	pos_adj = (c1[:time_close] % $candle_period).to_f
 	vol_adj = ((pos_adj>0) ? ($candle_period / pos_adj) : 1)
 	# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
-	vol_increased = ( ( c4[:trade_qty] < c4[:trade_qty] ) and ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
+	vol_increased = ( ( c4[:trade_qty] < c3[:trade_qty] ) and ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
 	# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) )
 
 	if c2_fore_bull and ($on_charge != :BULL) then
