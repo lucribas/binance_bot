@@ -7,9 +7,6 @@
 
 
 
-
-
-
 #+------------------------------------------------------------------+
 #|   Function of determining of candlestick                         |
 #+------------------------------------------------------------------+
@@ -254,9 +251,9 @@ def pattern( candle, position )
 			end
 
 			if !result.nil? then
-				puts "=="*30
-				puts result.inspect
-				puts "=="*30
+				$log.info  "=="*30
+				$log.info  result.inspect
+				$log.info  "=="*30
 			end
 
 	return result

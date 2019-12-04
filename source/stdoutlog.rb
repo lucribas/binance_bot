@@ -4,10 +4,12 @@ class StdoutLog
 	MAX_MESSAGE	= 60
 	MAX_STATUS	= 10
 
-	def initialize(debug_info, file_name = nil)
+	def initialize( debug_info, file_name = nil )
 		@debug_info = debug_info
 		@file = nil
 		@file_name_int = file_name
+		@stdout_en = true
+		@fileout_en = true
 
 		if !file_name.nil? && file_name != "" then
 			directory_name = File.dirname(file_name)
@@ -24,8 +26,16 @@ class StdoutLog
 	end
 
 
-	def set_debug_info (debug_info)
+	def set_debug_info( debug_info )
 		@debug_info = debug_info
+	end
+
+	def set_fileout_en( fileout_en )
+		@fileout_en = fileout_en
+	end
+
+	def set_stdout_en( stdout_en )
+		@stdout_en = stdout_en
 	end
 
 	def timestamp()
@@ -33,62 +43,62 @@ class StdoutLog
 		return time.strftime("%Y-%m-%d %H:%M:%S")
 	end
 
-	def none(message)
+	def none( message )
 		if !message.nil? && message != "" then
 			message.each_line { |line|
-				$stdout.puts line
-				$stdout.flush
-				@file.puts line if !@file.nil?
-				@file.flush if !@file.nil?
+				@stdout.puts line if @stdout_en
+				@stdout.flush if @stdout_en
+				@file.puts line if (@fileout_en and !@file.nil?)
+				@file.flush if (@fileout_en and !@file.nil?)
 			}
 		end
 	end
 
-	def info(message)
+	def info( message )
 		if !message.nil? && message != "" then
 			now = timestamp()
 			prefix = "|#{now}|INFO:  "
 			message.each_line { |line|
 				line = prefix + line
-				$stdout.puts line
-				$stdout.flush
-				@file.puts line if !@file.nil?
-				@file.flush if !@file.nil?
+				@stdout.puts line if @stdout_en
+				@stdout.flush if @stdout_en
+				@file.puts line if (@fileout_en and !@file.nil?)
+				@file.flush if (@fileout_en and !@file.nil?)
 			}
 		end
 	end
 
-	def debug(message)
+	def debug( message )
 		if !message.nil? && message != "" then
 			if @debug_info == true then
 				now = timestamp()
 				prefix = "|#{now}|DEBUG: "
 				message.each_line { |line|
 					line = prefix + line
-					$stdout.puts line
-					$stdout.flush
-					@file.puts line if !@file.nil?
-					@file.flush if !@file.nil?
+					@stdout.puts line if @stdout_en
+					@stdout.flush if @stdout_en
+					@file.puts line if (@fileout_en and !@file.nil?)
+					@file.flush if (@fileout_en and !@file.nil?)
 				}
 			end
 		end
 	end
 
-	def error(message)
+	def error( message )
 		if !message.nil? && message != "" then
 			now = timestamp()
 			prefix = "|#{now}|ERROR: "
 			message.each_line { |line|
 				line = prefix + line
-				$stdout.puts line
-				$stdout.flush
-				@file.puts line if !@file.nil?
-				@file.flush if !@file.nil?
+				@stdout.puts line if @stdout_en
+				@stdout.flush if @stdout_en
+				@file.puts line if (@fileout_en and !@file.nil?)
+				@file.flush if (@fileout_en and !@file.nil?)
 			}
 		end
 	end
 
-	def mark(message, status = nil)
+	def mark( message, status = nil )
 		if !message.nil? && message != "" then
 			now = timestamp()
 
@@ -117,20 +127,20 @@ class StdoutLog
 			end
 			message = line + "##"
 
-			$stdout.puts bar
-			$stdout.flush
-			@file.puts bar if !@file.nil?
-			@file.flush if !@file.nil?
+			@stdout.puts bar
+			@stdout.flush if @stdout_en
+			@file.puts bar if (@fileout_en and !@file.nil?)
+			@file.flush if (@fileout_en and !@file.nil?)
 
-			$stdout.puts message
-			$stdout.flush
-			@file.puts message if !@file.nil?
-			@file.flush if !@file.nil?
+			@stdout.puts message
+			@stdout.flush if @stdout_en
+			@file.puts message if (@fileout_en and !@file.nil?)
+			@file.flush if (@fileout_en and !@file.nil?)
 
-			$stdout.puts bar
-			$stdout.flush
-			@file.puts bar if !@file.nil?
-			@file.flush if !@file.nil?
+			@stdout.puts bar
+			@stdout.flush if @stdout_en
+			@file.puts bar if (@fileout_en and !@file.nil?)
+			@file.flush if (@fileout_en and !@file.nil?)
 		end
 	end
 
