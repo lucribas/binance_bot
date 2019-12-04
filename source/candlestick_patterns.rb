@@ -80,14 +80,28 @@ def pattern_classifier( candle, position )
 	avg_bodysize = 0
 	sum_bodysize = 0
 	num	= 0
-	for i in [1, position-BODY_PERIOD].max..position do
+	for i in [1, position-BODY_AVG_PERIOD].max..position do
 		if candle[i][:type] != :CAND_DOJI and candle[i][:bodysize] > 2 then
 			sum_bodysize	= sum_bodysize + candle[i][:bodysize]
 			num				= num + 1
 		end
 	end
 	avg_bodysize = sum_bodysize/num if num>0
+	avg_bodysize = [avg_bodysize, BODY_SIZE].min
 	c[:avg_bodysize] = avg_bodysize
+
+	# Calculate average volume of previous candlesticks
+	avg_trade_qty = 0
+	sum_trade_qty = 0
+	num	= 0
+	for i in [1, position-VOL_AVG_PERIOD].max..position do
+		sum_trade_qty	= sum_trade_qty + candle[i][:trade_qty]
+		num				= num + 1
+	end
+	avg_trade_qty = sum_trade_qty/num if num>0
+	avg_trade_qty = [avg_trade_qty, VOL_SIZE].min
+	c[:avg_trade_qty] = avg_trade_qty
+
 
 	#--- Determine type of candlestick
 	c[:type]	= :CAND_NONE;

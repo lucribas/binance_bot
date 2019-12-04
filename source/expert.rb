@@ -1,5 +1,6 @@
 
 require 'telegram/bot'
+require_relative 'record_trade'
 
 
 # fazer funcao para estatistica de trades
@@ -14,7 +15,7 @@ $sum_profit_neg = 0.0
 
 # period in seconds
 $candle_period = 10 * 1000
-TREND_PERIOD = 2 * 1000
+TREND_PERIOD = 1 * 1000
 
 CHK_STOP_HISTERESIS = 8 * 1000
 STOP_LOSS = 1.5
@@ -23,12 +24,16 @@ CHK_GAIN_HISTERESIS = 30 * 1000
 GAIN_MIN = 5.0
 SUM_THRESHOLD = 1.6
 
+VOL_SIZE = 3.0
+VOL_THRESHOLD = 0.7	# 30% of previous
+VOL_AVG_PERIOD = 6
+
 SEPAR = "-"*20+"\n"
 
 # period in candles
 SMA_PERIOD = 12
-BODY_PERIOD = 9
-exit "error body period" if BODY_PERIOD > SMA_PERIOD
+BODY_AVG_PERIOD = 11
+exit "error body period" if BODY_AVG_PERIOD > SMA_PERIOD
 
 BODY_SIZE = 2.0
 
@@ -100,7 +105,8 @@ def update_candle( trade )
 
 		c1[:market]		=	(c1[:open] == c1[:close]) ? :LATERAL : (
 							(c1[:open] < c1[:close]) ? :BULL : :BEAR )
-		c1[:market_chk]	= (c1[:bodysize] > BODY_SIZE) ? c1[:market] : :NONE
+		#c1[:market_chk]	= (c1[:bodysize] > BODY_SIZE) ? c1[:market] : :NONE
+		c1[:market_chk]	= (c1[:bodysize] > 0.7*c1[:avg_bodysize]) ? c1[:market] : :NONE
 
 		if trade_time > ($position_time + TREND_PERIOD) then
 			check_trend($candle, $position)
@@ -134,6 +140,8 @@ def update_candle( trade )
 			sum_bear: ( (!trade_bull) ? trade_qty : 0.0 ),
 			market:   :NONE,
 			market_chk: :NONE,
+			avg_bodysize: BODY_SIZE,
+			avg_trade_qty: VOL_SIZE,
 			bodysize: 0
 		}
 	end
@@ -340,6 +348,7 @@ def check_trend( candle, position )
 	hister			= c1[:time_close] - $start_trade_time
 	stp_gain_min	= (hister > CHK_GAIN_HISTERESIS) and (profit < GAIN_MIN) and $on_charge != :NONE
 	stp_loss		= (hister > CHK_STOP_HISTERESIS) and (profit < STOP_LOSS) and $on_charge != :NONE
+	# slow
 	c3_mkt_bull		= c3[:market_chk] == :BULL
 	c3_mkt_bear		= c3[:market_chk] == :BEAR
 	c2_mkt_bull		= c2[:market_chk] == :BULL
@@ -350,10 +359,11 @@ def check_trend( candle, position )
 	c2_figure_bear	= c2[:reversion] == :BEAR
 	c2_trend_bull	= c2[:trend] == :BULL and c2_mkt_bull
 	c2_trend_bear	= c2[:trend] == :BEAR and c2_mkt_bear
+	# fast
 	c1_mkt_bull		= c1[:market_chk] == :BULL
 	c1_mkt_bear		= c1[:market_chk] == :BEAR
-	c1_thrshld_bull	= c1[:sum_bull] > 1.0 and c1[:sum_bull] >= SUM_THRESHOLD*c1[:sum_bear]
-	c1_thrshld_bear	= c1[:sum_bear] > 1.0 and c1[:sum_bear] >= SUM_THRESHOLD*c1[:sum_bull]
+	c1_thrshld_bull	= c1[:sum_bull] > VOL_THRESHOLD*c1[:avg_trade_qty] and c1[:sum_bull] >= SUM_THRESHOLD*c1[:sum_bear]
+	c1_thrshld_bear	= c1[:sum_bear] > VOL_THRESHOLD*c1[:avg_trade_qty] and c1[:sum_bear] >= SUM_THRESHOLD*c1[:sum_bull]
 
 	# $log.info  "hister = #{c1[:time_close]} - #{$start_trade_time}"
 	# $log.info  "hister = #{hister}, stp_gain_min=#{stp_gain_min}, stp_loss=#{stp_loss}"
@@ -361,8 +371,8 @@ def check_trend( candle, position )
 
 	rule_bull_01 = c2_fore_bull and c1_thrshld_bull
 	rule_bear_01 = c2_fore_bear and c1_thrshld_bear
-	rule_bull_02 = c3_mkt_bull and c2_mkt_bull and c1_thrshld_bull
-	rule_bear_02 = c3_mkt_bear and c2_mkt_bear and c1_thrshld_bear
+	rule_bull_02 = c3_mkt_bull and c2_mkt_bull and c1_thrshld_bull and !c2_fore_bear
+	rule_bear_02 = c3_mkt_bear and c2_mkt_bear and c1_thrshld_bear and !c2_fore_bull
 	rule_bull_03 = c2_figure_bull and c1_thrshld_bull
 	rule_bear_03 = c2_figure_bear and c1_thrshld_bear
 	rule_bull_04 = c2_trend_bull and c1_thrshld_bull
@@ -372,12 +382,25 @@ def check_trend( candle, position )
 	rule_bull_06 = stp_loss and c1_thrshld_bull
 	rule_bear_06 = stp_loss and c1_thrshld_bear
 
-	if c2_fore_bull or c2_fore_bear then
-		$log.info "waiting to confirm forecast %s: sum_bull=%.2f sum_bear=%.2f" % [ c2[:forecast].to_s, c1[:sum_bull], c1[:sum_bear] ]
+	rule_bull_swap	= rule_bull_01 or rule_bull_02 or rule_bull_03 or rule_bull_04
+	rule_bear_swap	= rule_bear_01 or rule_bear_02 or rule_bear_03 or rule_bear_04
+
+
+	if c2_fore_bull then
+		$log.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], VOL_THRESHOLD*c1[:avg_trade_qty], SUM_THRESHOLD*c1[:sum_bear] ]
 	end
-	if c2_figure_bull or c2_figure_bear then
-		$log.info "waiting to confirm figure %s: sum_bull=%.2f sum_bear=%.2f" % [ c2[:reversion].to_s, c1[:sum_bull], c1[:sum_bear] ]
+	if c2_figure_bull then
+		$log.info "waiting to confirm figure BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], VOL_THRESHOLD*c1[:avg_trade_qty], SUM_THRESHOLD*c1[:sum_bear] ]
 	end
+
+	if c2_fore_bear then
+		$log.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], VOL_THRESHOLD*c1[:avg_trade_qty], SUM_THRESHOLD*c1[:sum_bull] ]
+	end
+	if c2_figure_bear then
+		$log.info "waiting to confirm figure BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], VOL_THRESHOLD*c1[:avg_trade_qty], SUM_THRESHOLD*c1[:sum_bull] ]
+	end
+
+
 
 	rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
 	rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
@@ -401,7 +424,7 @@ def check_trend( candle, position )
 			msg = "%s (%s)-%s" % [msg, rule_bull_msg, rule_bear_msg]
 			trade_close_bear( time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 			# reversion confirmed
-			if $on_charge != :BULL then
+			if $on_charge != :BULL and rule_bull_swap then
 				trade_start_bull( time: c1[:time_close], price: c1[:close], msg: msg )
 				return
 			end
@@ -425,7 +448,7 @@ def check_trend( candle, position )
 			msg = "%s %s-(%s)" % [msg, rule_bull_msg, rule_bear_msg]
 			trade_close_bull( time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 			# reversion confirmed
-			if $on_charge != :BEAR then
+			if $on_charge != :BEAR and rule_bear_swap then
 				trade_start_bear( time: c1[:time_close], price: c1[:close], msg: msg )
 				return
 			end

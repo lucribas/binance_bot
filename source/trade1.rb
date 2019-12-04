@@ -9,8 +9,10 @@ require 'bigdecimal'
 require_relative 'secret_keys'
 require_relative 'expert'
 require_relative 'candlestick_patterns'
+require_relative 'record_trade'
 
 # => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
+
 
 require_relative 'stdoutlog'
 STDOUT.sync = true
@@ -20,6 +22,10 @@ $log = StdoutLog.new($debug, $log_file_name)
 
 $log_file_name = "log/TRADE_" + $timestamp + ".log"
 $trade = StdoutLog.new($debug, $log_file_name)
+
+$rec_file_name = "rec/TRADE_" + $timestamp + ".dmp"
+$rec_trade = RecordTrade.new( $rec_file_name )
+$record_only = ENV.include?("RECORD_ONLY")
 
 def format_time( evt_time )
 	evt = (evt_time.to_f/1000)
@@ -155,7 +161,11 @@ EM.run do
 				obj_data["m"]?"bid":"ask",
 				obj_data["q"] #qty
 			]
-			update_candle( { :price => obj_data["p"], :time => trade_time, :qty => obj_data["q"], :bull => bull })
+
+			trade_obj = { :price => obj_data["p"], :time => trade_time, :event => event_time, :qty => obj_data["q"], :bull => bull }
+			$rec_trade.record( trade_obj )
+			update_candle( trade_obj ) if $record_only
+
 			f_val = obj_data["q"].to_f
 			if true then
 				#if f_val>=0.002 then
