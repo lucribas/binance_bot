@@ -18,6 +18,7 @@ require_relative 'record_trade'
 
 # -- rec trade
 $rec_file_name = "rec/TRADE_20191204_001437.dmp"
+# $rec_file_name = "rec/training_TRADE_20191204_001437.dmp"
 $rec_trade = PlayTrade.new( $rec_file_name )
 
 # -- log monitor
@@ -26,7 +27,7 @@ STDOUT.sync = true
 $timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
 $log_file_name = "log/MON_" + $timestamp + ".log"
 $log = StdoutLog.new($debug, $log_file_name)
-$log.set_fileout_en( false )
+$log.set_fileout_en( true )
 $log.set_stdout_en( false )
 
 # -- log trade
@@ -74,3 +75,4 @@ while !trade_obj.nil? do
 	update_candle( trade_obj )
 	trade_obj = $rec_trade.read()
 end
+get_profit_report()
