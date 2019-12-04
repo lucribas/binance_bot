@@ -6,12 +6,16 @@ require 'json'
 require 'net/ntp'
 require 'bigdecimal'
 
+$play_trade = true
+
+
 require_relative 'secret_keys'
 require_relative 'expert'
 require_relative 'candlestick_patterns'
 require_relative 'record_trade'
 
 # => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
+
 
 def format_time( evt_time )
 	evt = (evt_time.to_f/1000)
