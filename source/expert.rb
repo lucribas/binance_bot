@@ -355,14 +355,17 @@ def check_trend( candle, position )
 	# slow
 	c3_mkt_bull		= (c3[:market_chk] == :BULL)
 	c3_mkt_bear		= (c3[:market_chk] == :BEAR)
+	c3_trend_bull	= (c3[:trend] == :BULL)
+	c3_trend_bear	= (c3[:trend] == :BEAR)
+
 	c2_mkt_bull		= (c2[:market_chk] == :BULL)
 	c2_mkt_bear		= (c2[:market_chk] == :BEAR)
 	c2_fore_bull	= (c2[:forecast] == :BULL)
 	c2_fore_bear	= (c2[:forecast] == :BEAR)
 	c2_figure_bull	= (c2[:reversion] == :BULL)
 	c2_figure_bear	= (c2[:reversion] == :BEAR)
-	c2_trend_bull	= ((c2[:trend] == :BULL) )
-	c2_trend_bear	= ((c2[:trend] == :BEAR))
+	c2_trend_bull	= (c2[:trend] == :BULL)
+	c2_trend_bear	= (c2[:trend] == :BEAR)
 	# fast
 	c1_mkt_bull		= (c1[:market_chk] == :BULL)
 	c1_mkt_bear		= (c1[:market_chk] == :BEAR)
@@ -379,8 +382,14 @@ def check_trend( candle, position )
 	rule_bear_02 = ( c3_mkt_bear and c2_mkt_bear and c1_mkt_bear and c1_thrshld_bear and (!c2_fore_bull) )
 	rule_bull_03 = ( c2_figure_bull and c1_mkt_bull and c1_thrshld_bull )
 	rule_bear_03 = ( c2_figure_bear and c1_mkt_bear and c1_thrshld_bear )
-	rule_bull_04 = ( c2_trend_bull and c1_mkt_bull and c1_thrshld_bull )
-	rule_bear_04 = ( c2_trend_bear and c1_mkt_bear and c1_thrshld_bear )
+
+	# melhorar o deteccao de trend - muitos falsos
+	# rule_bull_04 = ( c2_trend_bull and c1_mkt_bull and c1_thrshld_bull )
+	# rule_bear_04 = ( c2_trend_bear and c1_mkt_bear and c1_thrshld_bear )
+
+	rule_bull_04 = ( c3_trend_bull and c2_trend_bull and c1_mkt_bull and c1_thrshld_bull )
+	rule_bear_04 = ( c3_trend_bear and c2_trend_bear and c1_mkt_bear and c1_thrshld_bear )
+
 	rule_bull_05 = ( stp_gain_min and c1_thrshld_bull )
 	rule_bear_05 = ( stp_gain_min and c1_thrshld_bear )
 	rule_bull_06 = ( stp_loss and c1_thrshld_bull )
