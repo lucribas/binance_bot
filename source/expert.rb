@@ -15,7 +15,7 @@ $sum_profit_neg = 0.0
 
 # period in seconds
 $candle_period = 20 * 1000
-TREND_PERIOD = 2 * 1000
+TREND_PERIOD = 0.5 * 1000
 
 CHK_VOL_TH = 0.1
 CHK_STOP_HISTERESIS = 2 * 1000
@@ -292,6 +292,7 @@ def check_trend( candle, position )
 	#--------------------------------------------------------------------------------------------
 	hister			= (c1[:time_close] - $start_trade_time)
 	stp_gain_min	= ( (hister > CHK_GAIN_HISTERESIS) and (profit < GAIN_MIN) and ($on_charge != :NONE) )
+	# stp_loss		= ( (hister > CHK_STOP_HISTERESIS) and (profit < STOP_LOSS) and ($on_charge != :NONE) )
 	stp_loss		= ( (hister > CHK_STOP_HISTERESIS) and (profit < STOP_LOSS) and ($on_charge != :NONE) )
 	# slow
 	c3_mkt_bull		= (c3[:market_chk] == :BULL)
@@ -369,8 +370,9 @@ def check_trend( candle, position )
 	# new indicators
 	pos_adj = (c1[:time_close] % $candle_period).to_f
 	vol_adj = ((pos_adj>0) ? ($candle_period / pos_adj) : 1)
-	# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
-	vol_increased = ( ( c4[:trade_qty] < c3[:trade_qty] ) and ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
+	vol_increased = ( ( 0.8*c3[:trade_qty] < c2[:trade_qty] ) and ( 0.8*c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
+	#vol_increased = ( ( c4[:trade_qty] < c3[:trade_qty] ) and ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
+	#vol_increased = ( c3[:trade_qty] < c2[:trade_qty] )
 	# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) )
 
 	if c2_fore_bull and ($on_charge != :BULL) then
@@ -381,6 +383,7 @@ def check_trend( candle, position )
 	end
 
 	if c2_fore_bear and ($on_charge != :BEAR) then
+		# binding.pry if (c1[:sum_bear] > 203)
 		$log.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bull] ]
 	end
 	if c2_figure_bear and ($on_charge != :BEAR) then

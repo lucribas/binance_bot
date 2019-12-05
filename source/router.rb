@@ -41,6 +41,7 @@ def trade_close_bear( close_rule:, time:, price:, profit:, msg: )
 		$on_charge = :NONE
 		$log.info "N"*30
 		$log.info msg.yellow
+		(puts format_time( time ) + ": CLOSE BEAR: buy  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
 		send_trade_info	format_time( time ) + msg
 		send_trade_info "CLOSE BEAR: buy  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ]
 		send_trade_info_send()
@@ -55,6 +56,7 @@ def trade_close_bull( close_rule:, time:, price:, profit:, msg: )
 		$on_charge = :NONE
 		$log.info "N"*30
 		$log.info msg.yellow
+		(puts format_time( time ) + ": CLOSE BULL: sell  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
 		send_trade_info	format_time( time ) + msg
 		send_trade_info "CLOSE BULL: sell %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ]
 		send_trade_info_send()
