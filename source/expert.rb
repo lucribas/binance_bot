@@ -430,9 +430,10 @@ def check_trend( candle, position )
 
 
 	# new indicators
+	hilo = (c1[:high]-c1[:low]).abs
 	pos_adj = (c1[:time_close] % $candle_period).to_f
 	vol_adj = ((pos_adj>0) ? ($candle_period / pos_adj) : 1)
-	vol_increased = ( ( 1.5*c3[:trade_qty] < c2[:trade_qty] ) and ( 0.8*c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
+	vol_increased = ( ( 1.5*c3[:trade_qty] < c2[:trade_qty] ) and ( 0.8*c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) and (hilo > 4.0))
 
 
 	#vol_increased = ( ( c4[:trade_qty] < c3[:trade_qty] ) and ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
