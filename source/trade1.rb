@@ -38,10 +38,10 @@ def format_time( evt_time )
 		evt	]
 end
 
-future_rest  = Binance::Client::REST_FUTURE.new api_key: $api_key, secret_key: $secret_key
-future_ws    = Binance::Client::WebSocketFuture.new
+$future_rest  = Binance::Client::REST_FUTURE.new api_key: $api_key, secret_key: $secret_key
+$future_ws    = Binance::Client::WebSocketFuture.new
 
-listen_key = future_rest.listenKey["listenKey"]
+$listen_key = $future_rest.listenKey["listenKey"]
 puts "Listener Key = #{listen_key}"
 
 diff = 0
@@ -207,9 +207,9 @@ EM.run do
 	# Create multiple streams in one call
 
 
-	#future_ws.user_data  listen_key: listen_key, methods: future_methods
+	#$future_ws.user_data  listen_key: listen_key, methods: future_methods
 
-	 future_ws.multi streams: [
+	 $future_ws.multi streams: [
 		{ type: 'aggTrade', symbol: 'BTCUSDT' }
 		# 	#{ type: 'ticker',   symbol: 'BTCUSDT' },
 		# 	#{ type: 'kline',    symbol: 'BTCUSDT', interval: '1m'},

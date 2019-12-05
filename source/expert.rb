@@ -4,7 +4,28 @@ require_relative 'record_trade'
 
 
 # fazer funcao para estatistica de trades
+# vai chegando orderns
+# memorizo evt entrada
+# memorizo evt saida
+# fecho volatilidade
+# OHLC.
+# O (Open) – preço de abertura
+# H (High)  – máxima
+# L (Low) – mínima
+# C (Close) – preço de fechamento
 
+
+# medir velocidade de subida
+# ver reversao
+# estimar
+#
+# # fazer codigo para entrar qndo ocorre mudanca
+# fazer vela em 1 segundo
+# se tendencia igual por mais do que 3 segundos pode entrar
+# quando vela mudar entao vender
+#
+# considerar um thresold minido de 1 pip para entradas e saidas
+# observar stop los e gain
 
 # analises
 $position = 0
@@ -14,8 +35,10 @@ $sum_profit_pos = 0.0
 $sum_profit_neg = 0.0
 
 # period in seconds
-$candle_period = 20 * 1000
+CANDLE_PERIOD = 20.0
+$candle_period = CANDLE_PERIOD * 1000
 TREND_PERIOD = 0.5 * 1000
+PERIOD_ADVANCE = 1 * 1000
 
 CHK_VOL_TH = 0.1
 CHK_STOP_HISTERESIS = 2 * 1000
@@ -33,6 +56,10 @@ VOL_THRESHOLD_REVERSION = 2.6	# 30% of previous
 VOL_AVG_PERIOD = 6
 
 SEPAR = "-"*20
+
+MA_7 	= 7 * CANDLE_PERIOD
+MA_25 	= 25 * CANDLE_PERIOD
+MA_99 	= 99 * CANDLE_PERIOD
 
 # period in candles
 SMA_PERIOD = 6*10
@@ -113,7 +140,11 @@ def update_candle( trade )
 		c1[:market]		=	(c1[:open] == c1[:close]) ? :LATERAL : (
 							(c1[:open] < c1[:close]) ? :BULL : :BEAR )
 		#c1[:market_chk]	= (c1[:bodysize] > BODY_SIZE) ? c1[:market] : :NONE
-		c1[:market_chk]	= (c1[:bodysize] > 0.7*c1[:avg_bodysize]) ? c1[:market] : :NONE
+		pos_adj = (c1[:time_close] % $candle_period).to_f
+		vol_adj = 1 #((pos_adj>0) ? ($candle_period / pos_adj) : 1)
+		c1[:market_chk]	= (c1[:bodysize] > 0.7*vol_adj*c1[:avg_bodysize]) ? c1[:market] : :NONE
+
+		#check_stop($candle, $position)
 
 		if trade_time > ($position_time + TREND_PERIOD) then
 			check_trend($candle, $position)
@@ -265,6 +296,37 @@ def make_forecast( candle, position )
 end
 
 
+## ADICIONAR MMA e cruzamento
+def check_stop( candle, position )
+
+	return if position < SMA_PERIOD
+
+	# forecast, trend, reversion only available in c2
+	return if position <= 10
+	c1 = candle[position]
+
+	if $on_charge == :BEAR then
+		profit = $start_bear_price - c1[:close]
+	elsif $on_charge == :BULL then
+		profit = c1[:close] - $start_bull_price
+	else
+		profit = 0.0
+	end
+
+	hister			= (c1[:time_close] - $start_trade_time)
+	stp_loss		= ( (hister > 2.0*1000) and (profit < -5.0) and ($on_charge != :NONE) )
+	rule_msg = "fstp"
+	msg = "fast STOP_LOSS"
+
+	if ($on_charge == :BEAR and stp_loss) then
+		# binding.pry if (( "%.2f" % profit ) == "-4.54" )
+		trade_close_bear( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
+	end
+
+	if ($on_charge == :BULL and stp_loss) then
+		trade_close_bull( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
+	end
+end
 
 ## ADICIONAR MMA e cruzamento
 def check_trend( candle, position )
