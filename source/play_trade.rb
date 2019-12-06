@@ -6,12 +6,8 @@ require 'json'
 require 'net/ntp'
 require 'bigdecimal'
 
-
-require 'ruby-prof'
-
-
-
-
+$profiler_en = false
+require 'ruby-prof' if $profiler_en
 
 
 $play_trade = true
@@ -101,17 +97,22 @@ def read_all()
 end
 
 
-
+# Create log infrastructure
 log_on()
 
-# profile the code
-RubyProf.start
+if $profiler_en then
+	# profile the code
+	RubyProf.start
+end
 
+# Main code
 read_all()
 
-# ... code to profile ...
-result = RubyProf.stop
+if $profiler_en then
+	# ... code to profile ...
+	result = RubyProf.stop
 
-# print a flat profile to text
-printer = RubyProf::FlatPrinter.new(result)
-printer.print(STDOUT)
+	# print a flat profile to text
+	printer = RubyProf::FlatPrinter.new(result)
+	printer.print(STDOUT)
+end
