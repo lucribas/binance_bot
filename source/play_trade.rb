@@ -20,7 +20,6 @@ require_relative 'record_trade'
 
 # => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
 
-
 def log_on()
 	# -- rec trade
 	$rec_file_name = "rec/TRADE_20191204_001437.dmp"
@@ -33,14 +32,10 @@ def log_on()
 	$timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
 	$log_file_name = "log/MON_" + $timestamp + ".log"
 	$log = StdoutLog.new($debug, $log_file_name)
-	$log.set_fileout_en( false )
-	$log.set_stdout_en( false )
 
 	# -- log trade
 	$td_file_name = "log/TRADE_" + $timestamp + ".log"
 	$trade = StdoutLog.new($debug, $td_file_name)
-	$trade.set_fileout_en( true )
-	$trade.set_stdout_en( false )
 end
 
 def sformat_time( evt_time )
@@ -99,6 +94,12 @@ end
 
 # Create log infrastructure
 log_on()
+
+$log.set_fileout_en( false )
+$log.set_stdout_en( false )
+$trade.set_fileout_en( true )
+$trade.set_stdout_en( false )
+
 
 if $profiler_en then
 	# profile the code

@@ -384,6 +384,15 @@ def check_trend( candle, position )
 	c1_mkt_bull		= (c1[:market_chk] == :BULL)
 	c1_mkt_bear		= (c1[:market_chk] == :BEAR)
 
+
+	# new indicators
+	hilo1 = (c1[:high]-c1[:low]).abs
+	hilo2 = (c2[:high]-c2[:low]).abs
+	hilo3 = (c3[:high]-c3[:low]).abs
+	pos_adj = (c1[:time_close] % $candle_period).to_f
+	vol_adj = ((pos_adj>0) ? ($candle_period / pos_adj) : 1)
+
+
 	# vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
 	# vol_th_rev_vl	= [ VOL_THRESHOLD_REVERSION*c1[:avg_trade_qty], VOL_THRESHOLD_REVERSION*VOL_SIZE].min
 	# vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
@@ -399,7 +408,11 @@ def check_trend( candle, position )
 	#
 
      # o vol nao consegue pegar os ganhos
-	vol_th_flg = true #c3[:avg_trade_qty]<c2[:avg_trade_qty]
+	 vol_th_flg = true #c3[:avg_trade_qty]<c2[:avg_trade_qty]
+	 bull_ind = c2[:low]<c1[:low]
+	 bear_ind = c2[:high]>c1[:high]
+	 hilo_ind = (hilo3<hilo2)
+	 vol_th_flg =  (c2[:avg_trade_qty]<vol_adj*c1[:avg_trade_qty])
 
 	c2_fore_bull	= (c2[:sum_bull] >= SUM_THRESHOLD_FORECAST*c2[:sum_bear])
 	c2_fore_bear	= (c2[:sum_bear] >= SUM_THRESHOLD_FORECAST*c2[:sum_bull])
@@ -411,10 +424,10 @@ def check_trend( candle, position )
 	c1_rev_bull		= (c1[:sum_bull] >= SUM_THRESHOLD_REVERSION*c1[:sum_bear])
 	c1_rev_bear		= (c1[:sum_bear] >= SUM_THRESHOLD_REVERSION*c1[:sum_bull])
 
-	c1_thr_fore_bull	= (c1_fore_bull and c2_fore_bull and vol_th_flg)
-	c1_thr_fore_bear	= (c1_fore_bear and c2_fore_bear and vol_th_flg)
-	c1_thr_rev_bull		= (c1_rev_bull  and c2_rev_bull and vol_th_flg)
-	c1_thr_rev_bear		= (c1_rev_bear  and c2_rev_bear and vol_th_flg)
+	c1_thr_fore_bull	= (c1_fore_bull and c2_fore_bull and vol_th_flg  and bull_ind)
+	c1_thr_fore_bear	= (c1_fore_bear and c2_fore_bear and vol_th_flg  and bear_ind)
+	c1_thr_rev_bull		= (c1_rev_bull  and c2_rev_bull and vol_th_flg  and bull_ind)
+	c1_thr_rev_bear		= (c1_rev_bear  and c2_rev_bear and vol_th_flg  and bear_ind)
 
 	# $log.info  "hister = #{c1[:time_close]} - #{$start_trade_time}"
 	# $log.info  "hister = #{hister}, stp_gain_min=#{stp_gain_min}, stp_loss=#{stp_loss}"
@@ -443,32 +456,27 @@ def check_trend( candle, position )
 	rule_bull_06 = ( stp_loss and c1_thr_fore_bull )
 	rule_bear_06 = ( stp_loss and c1_thr_fore_bear )
 
-	# rule_bull_start	= ( rule_bull_01 or rule_bull_02 or rule_bull_03 or rule_bull_04 )
-	# rule_bear_start	= ( rule_bear_01 or rule_bear_02 or rule_bear_03 or rule_bear_04 )
-	rule_bull_start	= ( rule_bull_01 or rule_bull_02 )
-	rule_bull_start_msg	= [ rule_bull_01, rule_bull_02 ].map { |v| v ? 1 : 0 }.join  if $log.log_en?
-	rule_bear_start	= ( rule_bear_01 or rule_bear_02 )
-	rule_bear_start_msg	= [ rule_bear_01, rule_bear_02 ].map { |v| v ? 1 : 0 }.join if $log.log_en?
+	rule_bull_start	= ( rule_bull_01 or rule_bull_02 or rule_bull_03 or rule_bull_04 )
+	rule_bear_start	= ( rule_bear_01 or rule_bear_02 or rule_bear_03 or rule_bear_04 )
+	#rule_bull_start	= ( rule_bull_01 or rule_bull_02 )
+	#rule_bear_start	= ( rule_bear_01 or rule_bear_02 )
 
 	# nao usa mais o trend para entrar
 	# rule_bull_start	= ( ( (!c1[:flags_bull][0]) and rule_bull_01 ) or ( (!c1[:flags_bull][1]) and rule_bull_02 ) )
 	# rule_bear_start	= ( ( (!c1[:flags_bear][0]) and rule_bear_01 ) or ( (!c1[:flags_bear][1]) and rule_bear_02 ) )
 	# nao usa o trend para fechar
+
 	rule_bear_close		= (rule_bull_03 or rule_bull_05 or rule_bull_06)
-	rule_bear_close_msg = [rule_bull_03, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join if $log.log_en?
 	rule_bull_close		= (rule_bear_03 or rule_bear_05 or rule_bear_06)
-	rule_bull_close_msg = [rule_bear_03, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join if $log.log_en?
+
+#	rule_bear_close	= ( rule_bull_01 or rule_bull_02 or rule_bull_03 or rule_bull_04 )
+#	rule_bull_close	= ( rule_bear_01 or rule_bear_02 or rule_bear_03 or rule_bear_04 )
+
 
 	# c1[:flags_bear] = [(rule_bear_01 or c1[:flags_bear][0]), (rule_bear_02 or c1[:flags_bear][1])]
 	# c1[:flags_bull] = [(rule_bull_01 or c1[:flags_bull][0]), (rule_bull_02 or c1[:flags_bear][1])]
 
 
-	# new indicators
-	hilo1 = (c1[:high]-c1[:low]).abs
-	hilo2 = (c2[:high]-c2[:low]).abs
-	hilo3 = (c3[:high]-c3[:low]).abs
-	pos_adj = (c1[:time_close] % $candle_period).to_f
-	vol_adj = ((pos_adj>0) ? ($candle_period / pos_adj) : 1)
 	vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (1.2*vol_adj*c1[:trade_qty]) ) and (hilo3 < hilo2) and (2.0 < hilo2) and (3.0 < hilo2) and (1.0 < hilo1))
 
 	#vol_increased = ( ( c4[:trade_qty] < c3[:trade_qty] ) and ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
@@ -513,14 +521,17 @@ def check_trend( candle, position )
 			msg = " %s (%s)-%s:" % [msg, rule_bull_msg, rule_bear_msg]
 	end
 
+
 	# close confirmed
 	if trade_close_bear_ind then
 		# binding.pry if (( "%.2f" % profit ) == "-4.54" )
+		rule_bear_close_msg = [rule_bull_03, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
 		trade_close_bear( close_rule: rule_bear_close_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 		# binding.pry if rule_bear_close_msg == "000"
 	end
 	# start confirmed
 	if trade_start_bull_ind then
+		rule_bull_start_msg	= [ rule_bull_01, rule_bull_02 ].map { |v| v ? 1 : 0 }.join
 		trade_start_bull( start_rule: rule_bull_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
 		return
 	end
@@ -530,6 +541,14 @@ def check_trend( candle, position )
 
 	# fast close trade if Change trend
 	if ( trade_close_bull_en or trade_start_bear_en ) then
+
+			rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
+			rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
+			if $log.log_en? then
+				rule_msg = $on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
+				$log.info rule_msg
+			end
+
 			msg = "rule_bear_01: FORECAST " if rule_bear_01
 			msg = "rule_bear_02: MKT x3 " if rule_bear_02
 			msg = "rule_bear_03: FIGURE REVERSION " if rule_bear_03
@@ -541,9 +560,11 @@ def check_trend( candle, position )
 	end
 
 	if trade_close_bull_en then
+		rule_bull_close_msg = [rule_bear_03, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
 		trade_close_bull( close_rule: rule_bull_close_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 	end
 	if trade_start_bear_en then
+		rule_bear_start_msg	= [ rule_bear_01, rule_bear_02 ].map { |v| v ? 1 : 0 }.join
 		trade_start_bear( start_rule: rule_bear_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
 		return
 	end
