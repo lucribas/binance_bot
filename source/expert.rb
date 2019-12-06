@@ -62,7 +62,6 @@ SUM_THRESHOLD_REVERSION = 0.3
 VOL_SIZE = 20.0
 VOL_THRESHOLD_FORECAST = 0.5	# 30% of previous
 VOL_THRESHOLD_REVERSION = 2.6	# 30% of previous
-VOL_AVG_PERIOD = 12 # o equivalente a 60s
 
 SEPAR = "-"*20
 
@@ -71,8 +70,9 @@ MA_25 	= 25 * CANDLE_PERIOD
 MA_99 	= 99 * CANDLE_PERIOD
 
 # period in candles
-SMA_PERIOD = 6*10
-BODY_AVG_PERIOD = 11
+SMA_PERIOD = 6*4
+BODY_AVG_PERIOD = 4
+VOL_AVG_PERIOD = 4
 exit "error body period" if BODY_AVG_PERIOD > SMA_PERIOD
 
 BODY_SIZE = 2.0
@@ -389,14 +389,32 @@ def check_trend( candle, position )
 	# vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
 	# vol_th_rev_vl	= [ VOL_THRESHOLD_REVERSION*c1[:avg_trade_qty], VOL_THRESHOLD_REVERSION*VOL_SIZE].min
 
-	vol_th_flg = c3[:avg_trade_qty]<c2[:avg_trade_qty]
-	vol_th_fore_vl = c3[:avg_trade_qty]
-	vol_th_rev_vl = c3[:avg_trade_qty]
+	# vol_th_fore_vl = c3[:avg_trade_qty]
+	# vol_th_rev_vl = c3[:avg_trade_qty]
+	#
+	# c1_thr_fore_bull	= ( vol_th_flg  and (c1[:sum_bull] >= SUM_THRESHOLD_FORECAST*c1[:sum_bear]) )
+	# c1_thr_fore_bear	= ( vol_th_flg  and (c1[:sum_bear] >= SUM_THRESHOLD_FORECAST*c1[:sum_bull]) )
+	# c1_thr_rev_bull		= ( vol_th_flg  and (c1[:sum_bull] >= SUM_THRESHOLD_REVERSION*c1[:sum_bear]) )
+	# c1_thr_rev_bear		= ( vol_th_flg  and (c1[:sum_bear] >= SUM_THRESHOLD_REVERSION*c1[:sum_bull]) )
+	#
 
-	c1_thr_fore_bull	= ( vol_th_flg  and (c1[:sum_bull] >= SUM_THRESHOLD_FORECAST*c1[:sum_bear]) )
-	c1_thr_fore_bear	= ( vol_th_flg  and (c1[:sum_bear] >= SUM_THRESHOLD_FORECAST*c1[:sum_bull]) )
-	c1_thr_rev_bull		= ( vol_th_flg  and (c1[:sum_bull] >= SUM_THRESHOLD_REVERSION*c1[:sum_bear]) )
-	c1_thr_rev_bear		= ( vol_th_flg  and (c1[:sum_bear] >= SUM_THRESHOLD_REVERSION*c1[:sum_bull]) )
+     # o vol nao consegue pegar os ganhos
+	vol_th_flg = true #c3[:avg_trade_qty]<c2[:avg_trade_qty]
+
+	c2_fore_bull	= (c2[:sum_bull] >= SUM_THRESHOLD_FORECAST*c2[:sum_bear])
+	c2_fore_bear	= (c2[:sum_bear] >= SUM_THRESHOLD_FORECAST*c2[:sum_bull])
+	c2_rev_bull		= (c2[:sum_bull] >= SUM_THRESHOLD_REVERSION*c2[:sum_bear])
+	c2_rev_bear		= (c2[:sum_bear] >= SUM_THRESHOLD_REVERSION*c2[:sum_bull])
+
+	c1_fore_bull	= (c1[:sum_bull] >= SUM_THRESHOLD_FORECAST*c1[:sum_bear])
+	c1_fore_bear	= (c1[:sum_bear] >= SUM_THRESHOLD_FORECAST*c1[:sum_bull])
+	c1_rev_bull		= (c1[:sum_bull] >= SUM_THRESHOLD_REVERSION*c1[:sum_bear])
+	c1_rev_bear		= (c1[:sum_bear] >= SUM_THRESHOLD_REVERSION*c1[:sum_bull])
+
+	c1_thr_fore_bull	= (c1_fore_bull and c2_fore_bull and vol_th_flg)
+	c1_thr_fore_bear	= (c1_fore_bear and c2_fore_bear and vol_th_flg)
+	c1_thr_rev_bull		= (c1_rev_bull  and c2_rev_bull and vol_th_flg)
+	c1_thr_rev_bear		= (c1_rev_bear  and c2_rev_bear and vol_th_flg)
 
 	# $log.info  "hister = #{c1[:time_close]} - #{$start_trade_time}"
 	# $log.info  "hister = #{hister}, stp_gain_min=#{stp_gain_min}, stp_loss=#{stp_loss}"
@@ -451,7 +469,7 @@ def check_trend( candle, position )
 	hilo3 = (c3[:high]-c3[:low]).abs
 	pos_adj = (c1[:time_close] % $candle_period).to_f
 	vol_adj = ((pos_adj>0) ? ($candle_period / pos_adj) : 1)
-	vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (1.2*vol_adj*c1[:trade_qty]) ) and (hilo3 < hilo2) and (3.0 < hilo2) and (4.0 < hilo2) and (2.0 < hilo1))
+	vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (1.2*vol_adj*c1[:trade_qty]) ) and (hilo3 < hilo2) and (2.0 < hilo2) and (3.0 < hilo2) and (1.0 < hilo1))
 
 	#vol_increased = ( ( c4[:trade_qty] < c3[:trade_qty] ) and ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
 	#vol_increased = ( c3[:trade_qty] < c2[:trade_qty] )
