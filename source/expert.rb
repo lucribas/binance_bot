@@ -2,6 +2,15 @@
 require 'telegram/bot'
 require_relative 'record_trade'
 
+# importante
+
+# se mercado rapido - ok
+# se mercado lento - muitos trades falsos
+
+# perdeu a capacidade de ganhar no mercado lento
+# achar estrategia para ganhar lento e rapido
+
+
 
 # fazer funcao para estatistica de trades
 # vai chegando orderns
