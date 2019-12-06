@@ -87,7 +87,7 @@ def read_all()
 	trade_obj = $rec_trade.read()
 	while !trade_obj.nil? do
 		n_trades = n_trades + 1
-		if ((n_trades % 1000)==0 ) then
+		if ((n_trades % 10000)==0 ) then
 			print sformat_time( trade_obj[:time] )+ "\r"
 		end
 		$stdout.flush

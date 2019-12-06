@@ -428,18 +428,18 @@ def check_trend( candle, position )
 	# rule_bull_start	= ( rule_bull_01 or rule_bull_02 or rule_bull_03 or rule_bull_04 )
 	# rule_bear_start	= ( rule_bear_01 or rule_bear_02 or rule_bear_03 or rule_bear_04 )
 	rule_bull_start	= ( rule_bull_01 or rule_bull_02 )
-	rule_bull_start_msg	= [ rule_bull_01, rule_bull_02 ].map { |v| v ? 1 : 0 }.join
+	rule_bull_start_msg	= [ rule_bull_01, rule_bull_02 ].map { |v| v ? 1 : 0 }.join  if $log.log_en?
 	rule_bear_start	= ( rule_bear_01 or rule_bear_02 )
-	rule_bear_start_msg	= [ rule_bear_01, rule_bear_02 ].map { |v| v ? 1 : 0 }.join
+	rule_bear_start_msg	= [ rule_bear_01, rule_bear_02 ].map { |v| v ? 1 : 0 }.join if $log.log_en?
 
 	# nao usa mais o trend para entrar
 	# rule_bull_start	= ( ( (!c1[:flags_bull][0]) and rule_bull_01 ) or ( (!c1[:flags_bull][1]) and rule_bull_02 ) )
 	# rule_bear_start	= ( ( (!c1[:flags_bear][0]) and rule_bear_01 ) or ( (!c1[:flags_bear][1]) and rule_bear_02 ) )
 	# nao usa o trend para fechar
 	rule_bear_close		= (rule_bull_03 or rule_bull_05 or rule_bull_06)
-	rule_bear_close_msg = [rule_bull_03, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
+	rule_bear_close_msg = [rule_bull_03, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join if $log.log_en?
 	rule_bull_close		= (rule_bear_03 or rule_bear_05 or rule_bear_06)
-	rule_bull_close_msg = [rule_bear_03, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
+	rule_bull_close_msg = [rule_bear_03, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join if $log.log_en?
 
 	# c1[:flags_bear] = [(rule_bear_01 or c1[:flags_bear][0]), (rule_bear_02 or c1[:flags_bear][1])]
 	# c1[:flags_bull] = [(rule_bull_01 or c1[:flags_bull][0]), (rule_bull_02 or c1[:flags_bear][1])]
@@ -453,39 +453,38 @@ def check_trend( candle, position )
 	vol_adj = ((pos_adj>0) ? ($candle_period / pos_adj) : 1)
 	vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (1.2*vol_adj*c1[:trade_qty]) ) and (hilo3 < hilo2) and (3.0 < hilo2) and (4.0 < hilo2) and (2.0 < hilo1))
 
-
 	#vol_increased = ( ( c4[:trade_qty] < c3[:trade_qty] ) and ( c3[:trade_qty] < c2[:trade_qty] ) and ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
 	#vol_increased = ( c3[:trade_qty] < c2[:trade_qty] )
 	# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) )
 
-	if c2_fore_bull and ($on_charge != :BULL) then
-		$log.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bear] ] if $log.log_en?
-	end
-	if c2_figure_bull and ($on_charge != :BULL) then
-		$log.info "waiting to confirm figure BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bear] ] if $log.log_en?
-	end
 
-	if c2_fore_bear and ($on_charge != :BEAR) then
-		# binding.pry if (c1[:sum_bear] > 203)
-		$log.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bull] ] if $log.log_en?
-	end
-	if c2_figure_bear and ($on_charge != :BEAR) then
-		$log.info "waiting to confirm figure BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bull] ] if $log.log_en?
-	end
+	trade_close_bear_ind = ($on_charge == :BEAR and rule_bear_close)
+	trade_start_bull_ind = ($on_charge != :BULL and rule_bull_start and vol_increased)
 
-	rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
-	rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
-	rule_msg = $on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
-	$log.info rule_msg if $log.log_en?
+	if $log.log_en? then
+		if c2_fore_bull and ($on_charge != :BULL) then
+			$log.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bear] ]
+		end
+		if c2_figure_bull and ($on_charge != :BULL) then
+			$log.info "waiting to confirm figure BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bear] ]
+		end
+
+		if c2_fore_bear and ($on_charge != :BEAR) then
+			# binding.pry if (c1[:sum_bear] > 203)
+			$log.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bull] ]
+		end
+		if c2_figure_bear and ($on_charge != :BEAR) then
+			$log.info "waiting to confirm figure BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bull] ]
+		end
+	end
 	# fast close trade if Change trend
-	if (
-			rule_bull_01 or
-			rule_bull_02 or
-			rule_bull_03 or
-			rule_bull_04 or
-			rule_bull_05 or
-			rule_bull_06
-		) then
+	if (trade_close_bear_ind or trade_start_bull_ind) then
+			rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
+			rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
+			if $log.log_en? then
+				rule_msg = $on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
+				$log.info rule_msg
+			end
 			# binding.pry
 			msg = "rule_bull_01: FORECAST " if rule_bull_01
 			msg = "rule_bull_02: MKT x3 " if rule_bull_02
@@ -496,28 +495,23 @@ def check_trend( candle, position )
 			msg = " %s (%s)-%s:" % [msg, rule_bull_msg, rule_bear_msg]
 	end
 
-
 	# close confirmed
-	if ($on_charge == :BEAR and rule_bear_close) then
+	if trade_close_bear_ind then
 		# binding.pry if (( "%.2f" % profit ) == "-4.54" )
 		trade_close_bear( close_rule: rule_bear_close_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
-		binding.pry if rule_bear_close_msg == "000"
+		# binding.pry if rule_bear_close_msg == "000"
 	end
 	# start confirmed
-	if ($on_charge != :BULL and rule_bull_start and vol_increased) then
+	if trade_start_bull_ind then
 		trade_start_bull( start_rule: rule_bull_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
 		return
 	end
 
+	trade_close_bull_en = ($on_charge == :BULL and rule_bull_close)
+	trade_start_bear_en = ($on_charge != :BEAR and rule_bear_start and vol_increased)
+
 	# fast close trade if Change trend
-	if (
-			rule_bear_01 or
-			rule_bear_02 or
-			rule_bear_03 or
-			rule_bear_04 or
-			rule_bear_05 or
-			rule_bear_06
-		) then
+	if ( trade_close_bull_en or trade_start_bear_en ) then
 			msg = "rule_bear_01: FORECAST " if rule_bear_01
 			msg = "rule_bear_02: MKT x3 " if rule_bear_02
 			msg = "rule_bear_03: FIGURE REVERSION " if rule_bear_03
@@ -528,10 +522,10 @@ def check_trend( candle, position )
 			# reversion confirmed
 	end
 
-	if ($on_charge == :BULL and rule_bull_close) then
+	if trade_close_bull_en then
 		trade_close_bull( close_rule: rule_bull_close_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 	end
-	if ($on_charge != :BEAR and rule_bear_start and vol_increased) then
+	if trade_start_bear_en then
 		trade_start_bear( start_rule: rule_bear_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
 		return
 	end
