@@ -47,10 +47,11 @@ def trade_close_bear( close_rule:, time:, price:, profit:, msg: )
 		$start_trade_time = time
 		update_profit( profit: profit, start_rule: $start_bear_rule_sv, close_rule: close_rule)
 		$on_charge = :NONE
-		$log.info "N"*30
-		$log.info msg.yellow
-		(puts format_time( time ) + ": CLOSE BEAR: buy  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
-		send_trade_info	format_time( time ) + msg
+		$log.info "N"*30 if $log.log_en?
+		$log.info msg.yellow if $log.log_en?
+		stime = format_time( time )
+		(puts stime + ": CLOSE BEAR: buy  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
+		send_trade_info	stime + msg
 		send_trade_info "CLOSE BEAR: buy  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ]
 		send_trade_info_send()
 	end
@@ -62,10 +63,11 @@ def trade_close_bull( close_rule:, time:, price:, profit:, msg: )
 		$start_trade_time = time
 		update_profit( profit: profit, start_rule: $start_bull_rule_sv, close_rule: close_rule)
 		$on_charge = :NONE
-		$log.info "N"*30
-		$log.info msg.yellow
-		(puts format_time( time ) + ": CLOSE BULL: sell  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
-		send_trade_info	format_time( time ) + msg
+		$log.info "N"*30 if $log.log_en?
+		$log.info msg.yellow if $log.log_en?
+		stime = format_time( time )
+		(puts stime + ": CLOSE BULL: sell  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
+		send_trade_info	stime + msg
 		send_trade_info "CLOSE BULL: sell %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ]
 		send_trade_info_send()
 	end
@@ -78,9 +80,10 @@ def trade_start_bull( start_rule: ,time:, price:, msg: )
 		$start_trade_time = time
 		$start_bull_price = price
 		$on_charge = :BULL
-		$log.info msg.yellow
+		$log.info msg.yellow if $log.log_en?
+		stime = format_time( time )
 		send_trade_info SEPAR
-		send_trade_info	format_time( time ) + msg
+		send_trade_info	stime + msg
 		send_trade_info	"START BULL: buy  %.2f" % price
 		send_trade_info_send()
 	end
@@ -94,9 +97,10 @@ def trade_start_bear( start_rule:, time:, price:, msg: )
 		$start_trade_time = time
 		$start_bear_price = price
 		$on_charge = :BEAR
-		$log.info msg.yellow
+		$log.info msg.yellow if $log.log_en?
+		stime = format_time( time )
 		send_trade_info SEPAR
-		send_trade_info	format_time( time ) + msg
+		send_trade_info	stime + msg
 		send_trade_info "START BEAR: sell %.2f" % price
 		send_trade_info_send()
 	end

@@ -62,7 +62,7 @@ SUM_THRESHOLD_REVERSION = 0.3
 VOL_SIZE = 20.0
 VOL_THRESHOLD_FORECAST = 0.5	# 30% of previous
 VOL_THRESHOLD_REVERSION = 2.6	# 30% of previous
-VOL_AVG_PERIOD = 6
+VOL_AVG_PERIOD = 12 # o equivalente a 60s
 
 SEPAR = "-"*20
 
@@ -128,6 +128,7 @@ end
 
 def update_candle( trade )
 	c1 = $candle[$position]
+	# binding.pry
 	trade_price	= trade[:price].to_f
 	trade_time  = trade[:time].to_i
 	trade_qty	=  trade[:qty].to_f
@@ -164,7 +165,7 @@ def update_candle( trade )
 		if $position > 1 then
 			pattern_classifier( $candle, $position )
 			make_forecast( $candle, $position )
-			$log.info  "candle[#{$position}]:  %s" % $candle[$position].inspect
+			$log.info  "candle[#{$position}]:  %s" % $candle[$position].inspect if $log.log_en?
 		end
 
 		# previous reversion
@@ -173,7 +174,7 @@ def update_candle( trade )
 		# initialize the next candlestick
 		$position = $position + 1
 		$position_time = trade_time - (trade_time % $candle_period)
-		# $log.info  "$position_time = #{$position_time}"
+		# $log.info  "$position_time = #{$position_time}" if $log.log_en?
 		$candle[$position] = {
 			time:  $position_time,
 			time_open: trade_time,
@@ -383,13 +384,19 @@ def check_trend( candle, position )
 	c1_mkt_bull		= (c1[:market_chk] == :BULL)
 	c1_mkt_bear		= (c1[:market_chk] == :BEAR)
 
-	vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
-	vol_th_rev_vl	= [ VOL_THRESHOLD_REVERSION*c1[:avg_trade_qty], VOL_THRESHOLD_REVERSION*VOL_SIZE].min
+	# vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
+	# vol_th_rev_vl	= [ VOL_THRESHOLD_REVERSION*c1[:avg_trade_qty], VOL_THRESHOLD_REVERSION*VOL_SIZE].min
+	# vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
+	# vol_th_rev_vl	= [ VOL_THRESHOLD_REVERSION*c1[:avg_trade_qty], VOL_THRESHOLD_REVERSION*VOL_SIZE].min
 
-	c1_thr_fore_bull	= ( (c1[:sum_bull] > vol_th_fore_vl) and (c1[:sum_bull] >= SUM_THRESHOLD_FORECAST*c1[:sum_bear]) )
-	c1_thr_fore_bear	= ( (c1[:sum_bear] > vol_th_fore_vl) and (c1[:sum_bear] >= SUM_THRESHOLD_FORECAST*c1[:sum_bull]) )
-	c1_thr_rev_bull		= ( (c1[:sum_bull] > vol_th_rev_vl) and (c1[:sum_bull] >= SUM_THRESHOLD_REVERSION*c1[:sum_bear]) )
-	c1_thr_rev_bear		= ( (c1[:sum_bear] > vol_th_rev_vl) and (c1[:sum_bear] >= SUM_THRESHOLD_REVERSION*c1[:sum_bull]) )
+	vol_th_flg = c3[:avg_trade_qty]<c2[:avg_trade_qty]
+	vol_th_fore_vl = c3[:avg_trade_qty]
+	vol_th_rev_vl = c3[:avg_trade_qty]
+
+	c1_thr_fore_bull	= ( vol_th_flg  and (c1[:sum_bull] >= SUM_THRESHOLD_FORECAST*c1[:sum_bear]) )
+	c1_thr_fore_bear	= ( vol_th_flg  and (c1[:sum_bear] >= SUM_THRESHOLD_FORECAST*c1[:sum_bull]) )
+	c1_thr_rev_bull		= ( vol_th_flg  and (c1[:sum_bull] >= SUM_THRESHOLD_REVERSION*c1[:sum_bear]) )
+	c1_thr_rev_bear		= ( vol_th_flg  and (c1[:sum_bear] >= SUM_THRESHOLD_REVERSION*c1[:sum_bull]) )
 
 	# $log.info  "hister = #{c1[:time_close]} - #{$start_trade_time}"
 	# $log.info  "hister = #{hister}, stp_gain_min=#{stp_gain_min}, stp_loss=#{stp_loss}"
@@ -452,24 +459,24 @@ def check_trend( candle, position )
 	# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) )
 
 	if c2_fore_bull and ($on_charge != :BULL) then
-		$log.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bear] ]
+		$log.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bear] ] if $log.log_en?
 	end
 	if c2_figure_bull and ($on_charge != :BULL) then
-		$log.info "waiting to confirm figure BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bear] ]
+		$log.info "waiting to confirm figure BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bear] ] if $log.log_en?
 	end
 
 	if c2_fore_bear and ($on_charge != :BEAR) then
 		# binding.pry if (c1[:sum_bear] > 203)
-		$log.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bull] ]
+		$log.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bull] ] if $log.log_en?
 	end
 	if c2_figure_bear and ($on_charge != :BEAR) then
-		$log.info "waiting to confirm figure BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bull] ]
+		$log.info "waiting to confirm figure BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bull] ] if $log.log_en?
 	end
 
 	rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
 	rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
 	rule_msg = $on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
-	$log.info rule_msg
+	$log.info rule_msg if $log.log_en?
 	# fast close trade if Change trend
 	if (
 			rule_bull_01 or

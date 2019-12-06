@@ -10,6 +10,7 @@ class StdoutLog
 		@file_name_int = file_name
 		@stdout_en = true
 		@fileout_en = true
+		@log_en = @debug_info or @fileout_en
 
 		if !file_name.nil? && file_name != "" then
 			directory_name = File.dirname(file_name)
@@ -32,10 +33,16 @@ class StdoutLog
 
 	def set_fileout_en( fileout_en )
 		@fileout_en = fileout_en
+		@log_en = @debug_info or @fileout_en
 	end
 
 	def set_stdout_en( stdout_en )
 		@stdout_en = stdout_en
+		@log_en = @debug_info or @fileout_en
+	end
+
+	def log_en?()
+		return @log_en
 	end
 
 	def timestamp()
