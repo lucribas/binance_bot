@@ -51,8 +51,8 @@ class PlayTrade
 
 	def read()
 		dmp = nil
-		size = @file.readline.to_i  if !@file.nil? and !@file.eof?
-		dmp = Marshal.load( @file.read(size) ) if !@file.nil? and !@file.eof?
+		size = @file.readline.to_i  if !@file.nil? && !@file.eof?
+		dmp = Marshal.load( @file.read(size) ) if !@file.nil? && !@file.eof?
 		return dmp
 	end
 

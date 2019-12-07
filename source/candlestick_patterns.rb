@@ -51,7 +51,7 @@ def pattern_classifier( candle, position )
 	c	= candle[position]
 
 	#binding.pry
-	# bullish or bearish candlestick
+	# bullish || bearish candlestick
 	c[:market]	=	(c[:open] == c[:close]) ? :LATERAL : (
 						(c[:open] < c[:close]) ? :BULL : :BEAR )
 	c[:bull]	= (c[:market] == :BULL)
@@ -81,7 +81,7 @@ def pattern_classifier( candle, position )
 	sum_bodysize = 0
 	num	= 0
 	for i in [1, position-BODY_AVG_PERIOD].max..position do
-		if candle[i][:type] != :CAND_DOJI and candle[i][:bodysize] > 2 then
+		if candle[i][:type] != :CAND_DOJI && candle[i][:bodysize] > 2 then
 			sum_bodysize	= sum_bodysize + candle[i][:bodysize]
 			num				= num + 1
 		end
@@ -106,14 +106,14 @@ def pattern_classifier( candle, position )
 	#--- Determine type of candlestick
 	c[:type]	= :CAND_NONE;
 	#--- long
-	c[:type]	= :CAND_LONG if (c[:bodysize] > avg_bodysize*1.3) and num>0
+	c[:type]	= :CAND_LONG if (c[:bodysize] > avg_bodysize*1.3) && num>0
 	#--- sort
-	c[:type]	= :CAND_SHORT if (c[:bodysize] < avg_bodysize*0.5) and num>0
+	c[:type]	= :CAND_SHORT if (c[:bodysize] < avg_bodysize*0.5) && num>0
 	#--- doji
-	c[:type]	= :CAND_DOJI if (c[:bodysize] < hl*0.03) and num>0
+	c[:type]	= :CAND_DOJI if (c[:bodysize] < hl*0.03) && num>0
 	#--- maribozu
-	if (  ( c[:shade_low] < c[:bodysize]*0.01 or c[:shade_high] < c[:bodysize]*0.01 ) and
-		c[:bodysize] > 0 ) and num>0 then
+	if (  ( (c[:shade_low] < c[:bodysize]*0.01) || (c[:shade_high] < c[:bodysize]*0.01) ) &&
+		(c[:bodysize] > 0) ) && num>0 then
 			if (	c[:type] == :CAND_LONG ) then
 					c[:type] = :CAND_MARIBOZU_LONG;
 			else
@@ -122,12 +122,12 @@ def pattern_classifier( candle, position )
 	end
 
 	#--- hammer
-	c[:type]	= :CAND_HAMMER if ( c[:shade_low] > c[:bodysize]*2 and c[:shade_high] < c[:bodysize]*0.1)
+	c[:type]	= :CAND_HAMMER if ( (c[:shade_low] > c[:bodysize]*2) && (c[:shade_high] < c[:bodysize]*0.1))
 	#--- invert hammer
-	c[:type]	= :CAND_INVERT_HAMMER if ( c[:shade_low] < c[:bodysize]*0.1 and c[:shade_high] > c[:bodysize]*2)
+	c[:type]	= :CAND_INVERT_HAMMER if ( (c[:shade_low] < c[:bodysize]*0.1) && (c[:shade_high] > c[:bodysize]*2))
 
 	#--- spinning top
-	c[:type]	= :CAND_SPIN_TOP if ( c[:type]==:CAND_SHORT and c[:shade_low] > c[:bodysize] and c[:shade_high] > c[:bodysize])
+	c[:type]	= :CAND_SPIN_TOP if ( (c[:type]==:CAND_SHORT) && (c[:shade_low] > c[:bodysize]) && (c[:shade_high] > c[:bodysize]))
 
 	c[:pattern] = pattern( candle, position )
 end

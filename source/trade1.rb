@@ -91,7 +91,7 @@ EM.run do
 
 		obj = JSON.parse(e.data)
 
-		if (!obj["e"].nil?) and obj["e"]=="ORDER_TRADE_UPDATE" then
+		if ( (!obj["e"].nil?) && obj["e"]=="ORDER_TRADE_UPDATE" ) then
 			event_time = obj["E"]
 			trade_time = obj["T"]
 			# puts obj.inspect
@@ -108,7 +108,7 @@ EM.run do
 			$log.info message.yellow
 		end
 
-		if (!obj["e"].nil?) and obj["e"]=="ACCOUNT_UPDATE" then
+		if ( (!obj["e"].nil?) && obj["e"]=="ACCOUNT_UPDATE" ) then
 			event_time = obj["E"]
 			trade_time = obj["T"]
 			# puts obj.inspect
@@ -196,7 +196,7 @@ EM.run do
 
 	trade_methods = { open: open, message: trade_mon, error: error, close: close }
 
-	# Pass a symbol and event handler Hash to connect and process events
+	# Pass a symbol && event handler Hash to connect && process events
 	#client.agg_trade symbol: 'BTCUSDT', methods: methods
 	# # kline takes an additional named parameter
 	#client.kline symbol: 'BTCUSDT', interval: '1m', methods: methods

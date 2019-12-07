@@ -10,7 +10,7 @@ class StdoutLog
 		@file_name_int = file_name
 		@stdout_en = true
 		@fileout_en = true
-		@log_en = @debug_info or @fileout_en
+		@log_en = @debug_info || @fileout_en
 
 		if !file_name.nil? && file_name != "" then
 			directory_name = File.dirname(file_name)
@@ -33,12 +33,12 @@ class StdoutLog
 
 	def set_fileout_en( fileout_en )
 		@fileout_en = fileout_en
-		@log_en = @debug_info or @fileout_en
+		@log_en = @debug_info || @fileout_en
 	end
 
 	def set_stdout_en( stdout_en )
 		@stdout_en = stdout_en
-		@log_en = @debug_info or @fileout_en
+		@log_en = @debug_info || @fileout_en
 	end
 
 	def log_en?()
@@ -55,8 +55,8 @@ class StdoutLog
 			message.each_line { |line|
 				@stdout.puts line if @stdout_en
 				@stdout.flush if @stdout_en
-				@file.puts line if (@fileout_en and !@file.nil?)
-				@file.flush if (@fileout_en and !@file.nil?)
+				@file.puts line if (@fileout_en && !@file.nil?)
+				@file.flush if (@fileout_en && !@file.nil?)
 			}
 		end
 	end
@@ -69,8 +69,8 @@ class StdoutLog
 				line = prefix + line
 				@stdout.puts line if @stdout_en
 				@stdout.flush if @stdout_en
-				@file.puts line if (@fileout_en and !@file.nil?)
-				@file.flush if (@fileout_en and !@file.nil?)
+				@file.puts line if (@fileout_en && !@file.nil?)
+				@file.flush if (@fileout_en && !@file.nil?)
 			}
 		end
 	end
@@ -84,8 +84,8 @@ class StdoutLog
 					line = prefix + line
 					@stdout.puts line if @stdout_en
 					@stdout.flush if @stdout_en
-					@file.puts line if (@fileout_en and !@file.nil?)
-					@file.flush if (@fileout_en and !@file.nil?)
+					@file.puts line if (@fileout_en && !@file.nil?)
+					@file.flush if (@fileout_en && !@file.nil?)
 				}
 			end
 		end
@@ -99,8 +99,8 @@ class StdoutLog
 				line = prefix + line
 				@stdout.puts line if @stdout_en
 				@stdout.flush if @stdout_en
-				@file.puts line if (@fileout_en and !@file.nil?)
-				@file.flush if (@fileout_en and !@file.nil?)
+				@file.puts line if (@fileout_en && !@file.nil?)
+				@file.flush if (@fileout_en && !@file.nil?)
 			}
 		end
 	end
@@ -136,18 +136,18 @@ class StdoutLog
 
 			@stdout.puts bar
 			@stdout.flush if @stdout_en
-			@file.puts bar if (@fileout_en and !@file.nil?)
-			@file.flush if (@fileout_en and !@file.nil?)
+			@file.puts bar if (@fileout_en && !@file.nil?)
+			@file.flush if (@fileout_en && !@file.nil?)
 
 			@stdout.puts message
 			@stdout.flush if @stdout_en
-			@file.puts message if (@fileout_en and !@file.nil?)
-			@file.flush if (@fileout_en and !@file.nil?)
+			@file.puts message if (@fileout_en && !@file.nil?)
+			@file.flush if (@fileout_en && !@file.nil?)
 
 			@stdout.puts bar
 			@stdout.flush if @stdout_en
-			@file.puts bar if (@fileout_en and !@file.nil?)
-			@file.flush if (@fileout_en and !@file.nil?)
+			@file.puts bar if (@fileout_en && !@file.nil?)
+			@file.flush if (@fileout_en && !@file.nil?)
 		end
 	end
 
