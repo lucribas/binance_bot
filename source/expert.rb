@@ -413,10 +413,10 @@ def check_trend( candle, position )
 	stp_loss2		= false #( (hister > CHK_STOP_HISTERESIS) && (profit < STOP_LOSS/3) && (on_charge_notnone) )
 
 
-	# vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
-	# vol_th_rev_vl	= [ VOL_THRESHOLD_REVERSION*c1[:avg_trade_qty], VOL_THRESHOLD_REVERSION*VOL_SIZE].min
-	# vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
-	# vol_th_rev_vl	= [ VOL_THRESHOLD_REVERSION*c1[:avg_trade_qty], VOL_THRESHOLD_REVERSION*VOL_SIZE].min
+	vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
+	vol_th_rev_vl	= [ VOL_THRESHOLD_REVERSION*c1[:avg_trade_qty], VOL_THRESHOLD_REVERSION*VOL_SIZE].min
+	vol_th_fore_vl	= [ VOL_THRESHOLD_FORECAST*c1[:avg_trade_qty], VOL_THRESHOLD_FORECAST*VOL_SIZE].min
+	vol_th_rev_vl	= [ VOL_THRESHOLD_REVERSION*c1[:avg_trade_qty], VOL_THRESHOLD_REVERSION*VOL_SIZE].min
 
 	# vol_th_fore_vl = c3[:avg_trade_qty]
 	# vol_th_rev_vl = c3[:avg_trade_qty]

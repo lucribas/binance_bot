@@ -53,8 +53,8 @@ class StdoutLog
 	def none( message )
 		if !message.nil? && message != "" then
 			message.each_line { |line|
-				@stdout.puts line if @stdout_en
-				@stdout.flush if @stdout_en
+				$stdout.puts line if @stdout_en
+				$stdout.flush if @stdout_en
 				@file.puts line if (@fileout_en && !@file.nil?)
 				@file.flush if (@fileout_en && !@file.nil?)
 			}
@@ -67,8 +67,9 @@ class StdoutLog
 			prefix = "|#{now}|INFO:  "
 			message.each_line { |line|
 				line = prefix + line
-				@stdout.puts line if @stdout_en
-				@stdout.flush if @stdout_en
+				# binding.pry
+				$stdout.puts line if @stdout_en
+				$stdout.flush if @stdout_en
 				@file.puts line if (@fileout_en && !@file.nil?)
 				@file.flush if (@fileout_en && !@file.nil?)
 			}
@@ -82,8 +83,8 @@ class StdoutLog
 				prefix = "|#{now}|DEBUG: "
 				message.each_line { |line|
 					line = prefix + line
-					@stdout.puts line if @stdout_en
-					@stdout.flush if @stdout_en
+					$stdout.puts line if @stdout_en
+					$stdout.flush if @stdout_en
 					@file.puts line if (@fileout_en && !@file.nil?)
 					@file.flush if (@fileout_en && !@file.nil?)
 				}
@@ -97,8 +98,8 @@ class StdoutLog
 			prefix = "|#{now}|ERROR: "
 			message.each_line { |line|
 				line = prefix + line
-				@stdout.puts line if @stdout_en
-				@stdout.flush if @stdout_en
+				$stdout.puts line if @stdout_en
+				$stdout.flush if @stdout_en
 				@file.puts line if (@fileout_en && !@file.nil?)
 				@file.flush if (@fileout_en && !@file.nil?)
 			}
@@ -134,18 +135,18 @@ class StdoutLog
 			end
 			message = line + "##"
 
-			@stdout.puts bar
-			@stdout.flush if @stdout_en
+			$stdout.puts bar
+			$stdout.flush if @stdout_en
 			@file.puts bar if (@fileout_en && !@file.nil?)
 			@file.flush if (@fileout_en && !@file.nil?)
 
-			@stdout.puts message
-			@stdout.flush if @stdout_en
+			$stdout.puts message
+			$stdout.flush if @stdout_en
 			@file.puts message if (@fileout_en && !@file.nil?)
 			@file.flush if (@fileout_en && !@file.nil?)
 
-			@stdout.puts bar
-			@stdout.flush if @stdout_en
+			$stdout.puts bar
+			$stdout.flush if @stdout_en
 			@file.puts bar if (@fileout_en && !@file.nil?)
 			@file.flush if (@fileout_en && !@file.nil?)
 		end

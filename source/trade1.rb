@@ -23,6 +23,12 @@ $log = StdoutLog.new($debug, $log_file_name)
 $log_file_name = "log/TRADE_" + $timestamp + ".log"
 $trade = StdoutLog.new($debug, $log_file_name)
 
+
+$log.set_fileout_en( true )
+$log.set_stdout_en( true )
+$trade.set_fileout_en( false )
+$trade.set_stdout_en( false )
+
 $rec_file_name = "rec/TRADE_" + $timestamp + ".dmp"
 $rec_trade = RecordTrade.new( $rec_file_name )
 
@@ -42,7 +48,9 @@ $future_rest  = Binance::Client::REST_FUTURE.new api_key: $api_key, secret_key: 
 $future_ws    = Binance::Client::WebSocketFuture.new
 
 $listen_key = $future_rest.listenKey["listenKey"]
-puts "Listener Key = #{listen_key}"
+# binding.pry
+puts "Listener Key = #{$listen_key}"
+
 
 diff = 0
 
@@ -83,7 +91,10 @@ diff = 0
 
 EM.run do
 	# Create event handlers
-	open    = proc { $log.info 'connected' }
+	open    = proc {
+		$log.info 'connected'
+		sent_telegram( "connected to binance!" ) if $telegram_en
+	 }
 
 	future_smessage = proc { |e|
 		s_local = Time.now
@@ -165,7 +176,7 @@ EM.run do
 				obj_data["q"] #qty
 			]
 
-			trade_obj = { :price => obj_data["p"], :time => trade_time, :event => event_time, :qty => obj_data["q"], :bull => bull }
+			trade_obj = { :price => obj_data["p"].to_f, :time => trade_time.to_i, :event => event_time.to_i, :qty => obj_data["q"].to_f, :bull => bull }
 			$rec_trade.record( trade_obj )
 			update_candle( trade_obj ) if !$record_only
 
@@ -188,13 +199,22 @@ EM.run do
 	}
 
 	error   = proc { |e| $log.info e.inspect }
-	close   = proc { $log.info 'closed' }
+	close   = proc {
+		$log.info 'closed'
+		sent_telegram( "CLOSE binance!" ) if $telegram_en
+	}
 	# Bundle our event handlers into Hash
 	#spot_methods = { open: open, message: spot_message, error: error, close: close }
 	#future_methods = { open: open, message: future_message, error: error, close: close }
 	future_methods = { open: open, message: future_smessage, error: error, close: close }
 
 	trade_methods = { open: open, message: trade_mon, error: error, close: close }
+
+	#Keepalive a user data stream to prevent a time out. User data streams will close after 60 minutes. It's recommended to send a ping about every 30 minutes.
+	EM.add_periodic_timer(25*60) {
+		$log.info 'send keep_alive_stream!'
+		$future_rest.keep_alive_stream!
+	}
 
 	# Pass a symbol && event handler Hash to connect && process events
 	#client.agg_trade symbol: 'BTCUSDT', methods: methods
