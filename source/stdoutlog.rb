@@ -11,6 +11,7 @@ class StdoutLog
 		@stdout_en = true
 		@fileout_en = true
 		@log_en = @debug_info || @fileout_en
+		STDOUT.sync = true
 
 		if !file_name.nil? && file_name != "" then
 			directory_name = File.dirname(file_name)

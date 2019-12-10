@@ -6,6 +6,10 @@ require 'json'
 require 'net/ntp'
 require 'bigdecimal'
 
+require_relative 'stdoutlog'
+require_relative 'Utils'
+require_relative 'Trade'
+require_relative 'Account'
 require_relative 'secret_keys'
 require_relative 'expert'
 require_relative 'candlestick_patterns'
@@ -13,40 +17,35 @@ require_relative 'record_trade'
 
 # => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
 
-
-require_relative 'stdoutlog'
-STDOUT.sync = true
 $timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
 $log_file_name = "log/MON_" + $timestamp + ".log"
+$td_file_name = "log/TRADE_" + $timestamp + ".log"
+$rec_file_name = "rec/TRADE_" + $timestamp + ".dmp"
+
 $log = StdoutLog.new($debug, $log_file_name)
-
-$log_file_name = "log/TRADE_" + $timestamp + ".log"
-$trade = StdoutLog.new($debug, $log_file_name)
-
+$trade = StdoutLog.new($debug, $td_file_name)
+$rec_trade = RecordTrade.new( $rec_file_name )
 
 $log.set_fileout_en( true )
 $log.set_stdout_en( true )
 $trade.set_fileout_en( false )
 $trade.set_stdout_en( false )
 
-$rec_file_name = "rec/TRADE_" + $timestamp + ".dmp"
-$rec_trade = RecordTrade.new( $rec_file_name )
-
-# windows: $ENV:RECORD_ONLY=1
-# linux: export RECORD_ONLY=1
-$record_only = ENV.include?("RECORD_ONLY")
 
 $future_rest  = Binance::Client::REST_FUTURE.new api_key: $api_key, secret_key: $secret_key
 $future_ws    = Binance::Client::WebSocketFuture.new
-
 $listen_key = $future_rest.listenKey["listenKey"]
-# binding.pry
+
 puts "Listener Key = #{$listen_key}"
 
-
-$diff = 0
-
 $td = Trade.new()
+$td.check_latency()
+
+$ac = Account.new()
+#$ac.update()
+
+# binding.pry
+# exit
 
 EM.run do
 	# Create event handlers
@@ -75,11 +74,10 @@ EM.run do
 
 	# Bundle our event handlers into Hash
 	ud_methods = { open: open, message: ud_message, error: error, close: close }
+	$future_ws.user_data  listen_key: $listen_key, methods: ud_methods
 
+	# Bundle our event handlers into Hash
 	ws_methods = { open: open, message: ws_message, error: error, close: close }
-
-	#$future_ws.user_data  listen_key: listen_key, methods: ud_methods
-
 	$future_ws.multi streams: [
 		{ type: 'aggTrade', symbol: 'BTCUSDT' }
 		# 	#{ type: 'ticker',   symbol: 'BTCUSDT' },

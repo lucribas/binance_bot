@@ -1,9 +1,15 @@
 
+# global variable
+$diff = 0
 
 
 class Trade
 
 	def initialize()
+		@record_only = false
+		# windows: $ENV:RECORD_ONLY=1
+		# linux: export RECORD_ONLY=1
+		set_record_only ENV.include?("RECORD_ONLY")
 	end
 
 	def on_open()
@@ -20,49 +26,65 @@ class Trade
 		$log.info e.inspect
 	end
 
+	def set_record_only(record_only)
+		@record_only = record_only
+	end
 
+	def check_latency()
+		$latency = binance_latence(num: 1)
 
-	def new_btcusdt_aggTrade()
-		s_local = $s_local.to_f + $diff
+		# workaround to windows PC with bad clock
+		if @record_only && $latency>0 then
+			$diff = $latency
+			$log.info "# workaround for windows PC with bad clock (latency=#{$latency} > 0) => diff=#{$diff}, RECORD_ONLY MODE"
+		elsif $latency>0 || $latency<-15 then
+			msg = "# PC with bad clock (latency=#{$latency} > 0), EXITING"
+			$log.info msg
+			sent_telegram( msg ) if $telegram_en
+			exit(-1)
+		else
+			$log.info "# considering diff=#{$diff}, measured latency=#{$latency}"
+		end
 
+	end
+
+	def new_btcusdt_aggTrade( obj )
+		s_local = $s_local.to_f - $diff
 		obj_data	= obj["data"]
 		event_time	= obj_data["E"]
 		trade_time	= obj_data["T"]
+		price		= obj_data["p"].to_f
+		qty			= obj_data["q"].to_f
 		bull		= obj_data["m"] ? false: true
-		message		= " %s -> %s [%3.2fms] : %.2f (%s) - %.6f" %
-		[
-			format_time( event_time ),
-			format_time( trade_time ),
-			(s_local*1000-event_time),
-			obj_data["p"], #vl
-			obj_data["m"]?"bid":"ask",
-			obj_data["q"] #qty
-		]
 
-		trade_obj = { :price => obj_data["p"].to_f, :time => trade_time.to_i, :event => event_time.to_i, :qty => obj_data["q"].to_f, :bull => bull }
+		trade_obj = { :price => price, :time => trade_time.to_i, :event => event_time.to_i, :qty => qty, :bull => bull }
 		$rec_trade.record( trade_obj )
-		update_candle( trade_obj ) if !$record_only
+		update_candle( trade_obj ) if !@record_only
 
-		f_val = obj_data["q"].to_f
 		if true then
+			message		= " %s -> %s [%3.2fms] : %.2f (%s) - %.6f" %
+			[
+				format_time( event_time ),
+				format_time( trade_time ),
+				(s_local*1000-event_time),
+				price, #vl
+				obj_data["m"]?"bid":"ask",
+				qty #qty
+			]
 			#if f_val>=0.002 then
-			message = message + " " + "X"*f_val.to_i
+			message = message + " " + "X"*qty.to_i
 			if bull then
 				$log.info message.cyan
 			else
 				$log.info message.red
 			end
-			# new_order( # evt vl qty
-			# 	(event_time/1000.0),
-			# 	obj_data["p"].to_f,
-			# 	(obj_data["m"] ? 1: -1) * obj_data["q"].to_f
-			# )
+
 		end
 	end
 
 
 	def btcusdt_depth5( obj )
-		s_local = $s_local.to_f + $diff
+		s_local = $s_local.to_f - $diff
 		obj_data	= obj["data"]
 		event_time	= obj_data["E"]
 		trade_time	= obj_data["T"]
