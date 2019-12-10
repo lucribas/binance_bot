@@ -114,23 +114,8 @@ require_relative 'router'
 # def trade_update( trade )
 # end
 
-def sent_telegram( message )
-	Telegram::Bot::Client.run($telegram_token) do |bot|
-		bot.api.send_message( chat_id: 43716964, text: message)
-	end
-end
 
 sent_telegram( "connected!" ) if $telegram_en
-
-def send_trade_info( message )
-	$message_buffer = $message_buffer + message + "\n"
-end
-
-def send_trade_info_send
-	$trade.info $message_buffer
-	sent_telegram $message_buffer if $telegram_en
-	$message_buffer = ""
-end
 
 def update_candle( trade )
 	c1 = $candle[$position]
