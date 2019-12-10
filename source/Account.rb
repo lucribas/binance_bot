@@ -27,6 +27,10 @@ class Account
 		$bin[:open_orders] = $future_rest.open_orders symbol: 'BTCUSDT'
 		puts $bin[:open_orders].inspect
 
+		puts "account_info:"
+		$bin[:account_info] = $future_rest.account_info
+		puts $bin[:account_info].inspect
+
 		puts "="*60
 	end
 end

@@ -17,6 +17,12 @@ require_relative 'record_trade'
 
 # => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
 
+
+
+# $env:TELEGRAM_DISABLE=1
+# windows: $ENV:RECORD_ONLY=1
+# linux: export RECORD_ONLY=1
+
 $timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
 $log_file_name = "log/MON_" + $timestamp + ".log"
 $td_file_name = "log/TRADE_" + $timestamp + ".log"
@@ -42,10 +48,10 @@ $td = Trade.new()
 $td.check_latency()
 
 $ac = Account.new()
-#$ac.update()
+$ac.update()
 
-# binding.pry
-# exit
+binding.pry
+exit
 
 EM.run do
 	# Create event handlers

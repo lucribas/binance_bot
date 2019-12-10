@@ -38,7 +38,10 @@ class Trade
 			$diff = $latency
 			$log.info "# workaround for windows PC with bad clock (latency=#{$latency} > 0) => diff=#{$diff}, RECORD_ONLY MODE"
 		elsif $latency>0 || $latency<-15 then
-			msg = "# PC with bad clock (latency=#{$latency} > 0), EXITING"
+			msg = "# PC with bad clock (latency=#{$latency} > 0), EXITING\n"
+			msg = msg + " # windows: $ENV:RECORD_ONLY=1\n"
+			msg = msg + " # linux: export RECORD_ONLY=1\n"
+
 			$log.info msg
 			sent_telegram( msg ) if $telegram_en
 			exit(-1)
