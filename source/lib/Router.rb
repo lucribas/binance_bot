@@ -1,19 +1,18 @@
-require 'colorize'
+
+#
+# Metodos
+#
+
 require 'binance'
-require 'eventmachine'
 require 'pry'
 require 'json'
-require 'net/ntp'
-require 'bigdecimal'
-require_relative 'stdoutlog'
-require_relative 'secret_keys'
 
 
 $sum_profit_pos_matrix = {}
 $sum_profit_neg_matrix = {}
 
 def update_profit( profit:, start_rule:, close_rule: )
-	$trades_num = $trades_num + 1
+	$log_trades_num = $log_trades_num + 1
 	$sum_profit = $sum_profit + profit
 
 	$sum_profit_pos_matrix[ start_rule ] = {} if $sum_profit_pos_matrix[ start_rule ].nil?
@@ -30,7 +29,7 @@ def update_profit( profit:, start_rule:, close_rule: )
 end
 
 def get_profit_sts( profit: 0)
-	return "profit=%.2f  [%d, %.2f, %.2f]  liq=%.2f  efic=%.4f" % [profit, $trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit, $sum_profit/$trades_num]
+	return "profit=%.2f  [%d, %.2f, %.2f]  liq=%.2f  efic=%.4f" % [profit, $log_trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit, $sum_profit/$log_trades_num]
 end
 
 def get_profit_report()
@@ -47,8 +46,8 @@ def trade_close_bear( close_rule:, time:, price:, profit:, msg: )
 		$start_trade_time = time
 		update_profit( profit: profit, start_rule: $start_bear_rule_sv, close_rule: close_rule)
 		$on_charge = :NONE
-		$log.info "N"*30 if $log.log_en?
-		$log.info msg.yellow if $log.log_en?
+		$log_mon.info "N"*30 if $log_mon.log_en?
+		$log_mon.info msg.yellow if $log_mon.log_en?
 		stime = format_time( time )
 		(puts stime + ": CLOSE BEAR: buy  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
 		send_trade_info	stime + msg
@@ -63,8 +62,8 @@ def trade_close_bull( close_rule:, time:, price:, profit:, msg: )
 		$start_trade_time = time
 		update_profit( profit: profit, start_rule: $start_bull_rule_sv, close_rule: close_rule)
 		$on_charge = :NONE
-		$log.info "N"*30 if $log.log_en?
-		$log.info msg.yellow if $log.log_en?
+		$log_mon.info "N"*30 if $log_mon.log_en?
+		$log_mon.info msg.yellow if $log_mon.log_en?
 		stime = format_time( time )
 		(puts stime + ": CLOSE BULL: sell  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
 		send_trade_info	stime + msg
@@ -80,7 +79,7 @@ def trade_start_bull( start_rule: ,time:, price:, msg: )
 		$start_trade_time = time
 		$start_bull_price = price
 		$on_charge = :BULL
-		$log.info msg.yellow if $log.log_en?
+		$log_mon.info msg.yellow if $log_mon.log_en?
 		stime = format_time( time )
 		send_trade_info SEPAR
 		send_trade_info	stime + msg
@@ -97,7 +96,7 @@ def trade_start_bear( start_rule:, time:, price:, msg: )
 		$start_trade_time = time
 		$start_bear_price = price
 		$on_charge = :BEAR
-		$log.info msg.yellow if $log.log_en?
+		$log_mon.info msg.yellow if $log_mon.log_en?
 		stime = format_time( time )
 		send_trade_info SEPAR
 		send_trade_info	stime + msg

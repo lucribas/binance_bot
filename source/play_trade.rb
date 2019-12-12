@@ -12,11 +12,9 @@ require 'ruby-prof' if $profiler_en
 
 $play_trade = true
 
-
 require_relative 'secret_keys'
-require_relative 'expert'
-require_relative 'candlestick_patterns'
-require_relative 'record_trade'
+require_relative 'lib/TradeExpert'
+require_relative 'lib/TradePersistence'
 
 # => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
 
@@ -26,16 +24,15 @@ def log_on()
 	# $rec_file_name = "rec/training_TRADE_20191204_001437.dmp"
 	$rec_trade = PlayTrade.new( $rec_file_name )
 
-	# -- log monitor
 	require_relative 'stdoutlog'
+	# -- log monitor
 	STDOUT.sync = true
-	$timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
-	$log_file_name = "log/MON_" + $timestamp + ".log"
-	$log = StdoutLog.new($debug, $log_file_name)
 
-	# -- log trade
-	$td_file_name = "log/TRADE_" + $timestamp + ".log"
-	$trade = StdoutLog.new($debug, $td_file_name)
+	$timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
+
+	$log_mon = StdoutLog.new($debug, LOG_MON_PREFIX + $timestamp + LOG_EXTENSION)
+	$log_trade = StdoutLog.new($debug, LOG_TRADE_PREFIX + $timestamp + LOG_EXTENSION)
+	$rec_trade = RecordTrade.new( REC_TRADE_PREFIX + $timestamp + REG_EXTENSION )
 end
 
 def read_all()
@@ -60,10 +57,10 @@ end
 # Create log infrastructure
 log_on()
 
-$log.set_fileout_en( false )
-$log.set_stdout_en( false )
-$trade.set_fileout_en( true )
-$trade.set_stdout_en( false )
+$log_mon.set_fileout_en( false )
+$log_mon.set_stdout_en( false )
+$log_trade.set_fileout_en( true )
+$log_trade.set_stdout_en( false )
 
 
 if $profiler_en then

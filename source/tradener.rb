@@ -6,42 +6,36 @@ require 'json'
 require 'net/ntp'
 require 'bigdecimal'
 
-require_relative 'stdoutlog'
-require_relative 'Utils'
-require_relative 'Trade'
-require_relative 'Account'
+# telegram and binance keys
 require_relative 'secret_keys'
-require_relative 'expert'
-require_relative 'candlestick_patterns'
-require_relative 'record_trade'
-
-# => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
 
 
+require_relative 'lib/defines'
+require_relative 'lib/Logger'
+require_relative 'lib/Utils'
+require_relative 'lib/Account'
+require_relative 'lib/Trade'
 
+# windows: $ENV:TRADE_EN=1
+# linux: export TRADE_EN=1
 # $env:TELEGRAM_DISABLE=1
 # windows: $ENV:RECORD_ONLY=1
 # linux: export RECORD_ONLY=1
 
+# current timestamp
 $timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
-$log_file_name = "log/MON_" + $timestamp + ".log"
-$td_file_name = "log/TRADE_" + $timestamp + ".log"
-$rec_file_name = "rec/TRADE_" + $timestamp + ".dmp"
 
-$log = StdoutLog.new($debug, $log_file_name)
-$trade = StdoutLog.new($debug, $td_file_name)
-$rec_trade = RecordTrade.new( $rec_file_name )
+# Logger
+$log_mon = Logger.new( filename: LOG_MON_PREFIX + $timestamp + LOG_EXTENSION, fileout_en: true, stdout_en: true)
+$log_trade = Logger.new( filename: LOG_TRADE_PREFIX + $timestamp + LOG_EXTENSION, fileout_en: false, stdout_en: false)
 
-$log.set_fileout_en( true )
-$log.set_stdout_en( true )
-$trade.set_fileout_en( false )
-$trade.set_stdout_en( false )
+# Persistence
+$rec_trade = RecordTrade.new( REC_TRADE_PREFIX + $timestamp + REG_EXTENSION )
 
-
+# Binance connection
 $future_rest  = Binance::Client::REST_FUTURE.new api_key: $api_key, secret_key: $secret_key
 $future_ws    = Binance::Client::WebSocketFuture.new
 $listen_key = $future_rest.listenKey["listenKey"]
-
 puts "Listener Key = #{$listen_key}"
 
 $td = Trade.new()
@@ -49,16 +43,20 @@ $td.check_latency()
 
 $ac = Account.new()
 $ac.update()
+#
+# binding.pry
+# exit
 
-binding.pry
-exit
+
+# => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
+# => https://pt.slideshare.net/OmerGazit/ruby-underground-event-machine
 
 EM.run do
-	# Create event handlers
+	# Create common event handlers
 	open    = proc { $td.on_open()  }
 	close   = proc { $td.on_close() }
 	error   = proc { |e| $td.on_error(e) }
-
+	# WebSocket (streaming) event handler - user_data stream
 	ud_message = proc { |e|
 		$s_local = Time.now
 		obj = JSON.parse(e.data)
@@ -68,8 +66,8 @@ EM.run do
 		end
 		#binding.pry
 	}
-
-	ws_message = proc { |e|
+	# WebSocket (streaming) event handler - multi streams
+	multi_message = proc { |e|
 		$s_local = Time.now
 		obj = JSON.parse(e.data)
 		if (!obj["stream"].nil?) then
@@ -80,10 +78,12 @@ EM.run do
 
 	# Bundle our event handlers into Hash
 	ud_methods = { open: open, message: ud_message, error: error, close: close }
+	# Register callbacks
 	$future_ws.user_data  listen_key: $listen_key, methods: ud_methods
 
 	# Bundle our event handlers into Hash
-	ws_methods = { open: open, message: ws_message, error: error, close: close }
+	multi_methods = { open: open, message: multi_message, error: error, close: close }
+	# Register callbacks
 	$future_ws.multi streams: [
 		{ type: 'aggTrade', symbol: 'BTCUSDT' }
 		# 	#{ type: 'ticker',   symbol: 'BTCUSDT' },
@@ -91,12 +91,12 @@ EM.run do
 		# 	#{ type: 'depth',    symbol: 'BTCUSDT', level: '5'}
 		#{ type: 'depth',    symbol: 'BTCUSDT', level: '5'}
 		],
-		methods: ws_methods
+		methods: multi_methods
 
 
 	#Keepalive a user data stream to prevent a time out. User data streams will close after 60 minutes. It's recommended to send a ping about every 30 minutes.
 	EM.add_periodic_timer(25*60) {
-		$log.info 'send keep_alive_stream!'
+		$log_mon.info 'send keep_alive_stream!'
 		$future_rest.keep_alive_stream!
 	}
 

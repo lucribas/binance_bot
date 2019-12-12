@@ -1,5 +1,5 @@
 
-require_relative 'candlestick_patterns_classifier'
+require_relative 'CandlestickPatternsClassifier'
 
 
 # based on

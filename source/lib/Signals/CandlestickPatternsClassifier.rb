@@ -250,10 +250,10 @@ def pattern( candle, position )
 					end
 			end
 
-			if $log.log_en? && !result.nil? then
-				$log.info  "=="*30
-				$log.info  result.inspect
-				$log.info  "=="*30
+			if $log_mon.log_en? && !result.nil? then
+				$log_mon.info  "=="*30
+				$log_mon.info  result.inspect
+				$log_mon.info  "=="*30
 			end
 
 	return result

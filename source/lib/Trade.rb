@@ -1,54 +1,67 @@
 
+require_relative 'TradePersistence'
+require_relative 'TradeExpert'
+
+require 'bigdecimal'
+
+
 # global variable
 $diff = 0
 
 
 class Trade
+	attr_reader :trade_rec_disable
+	attr_accessor :trade_realtime_disable
+	attr_accessor :trade_test_mode
 
 	def initialize()
-		@record_only = false
-		# windows: $ENV:RECORD_ONLY=1
-		# linux: export RECORD_ONLY=1
-		set_record_only ENV.include?("RECORD_ONLY")
+		# TRADE_REC_DISABLE
+		@trade_rec_disable		= ENV.include?("TRADE_REC_DISABLE")
+		$log_mon.info "Disabled trade recording" if @trade_rec_disable
+		# TRADE_REALTIME_DISABLE
+		@trade_realtime_disable	= ENV.include?("TRADE_REALTIME_DISABLE")
+		$log_mon.info "Disabled sending the current clock to Binance, the time is adjusted to meet Binance server limits" if @trade_rec_disable
+		# TRADE_TEST_MODE
+		@trade_test_mode		= ENV.include?("TRADE_TEST_MODE")
+		$log_mon.info "Disabled real trading. Trades are emulated. Also disable the Account/Order monitors" if @trade_test_mode
 	end
 
 	def on_open()
-		$log.info 'connected'
+		$log_mon.info 'connected'
 		sent_telegram( "connected to binance!" ) if $telegram_en
 	end
 
 	def on_close()
-		$log.info 'closed'
+		$log_mon.info 'closed'
 		sent_telegram( "CLOSE binance!" ) if $telegram_en
 	end
 
 	def on_error()
-		$log.info e.inspect
-	end
-
-	def set_record_only(record_only)
-		@record_only = record_only
+		$log_mon.info e.inspect
 	end
 
 	def check_latency()
-		$latency = binance_latence(num: 1)
+		$latency = binance_latency(num: 1)
 
 		# workaround to windows PC with bad clock
-		if @record_only && $latency>0 then
+		if @trade_realtime_disable then
 			$diff = $latency
-			$log.info "# workaround for windows PC with bad clock (latency=#{$latency} > 0) => diff=#{$diff}, RECORD_ONLY MODE"
+			$log_mon.info "# workaround for windows PC with bad clock (latency=#{$latency}) => diff=#{$diff}, NOT_REALTIME_TRADING_FIX MODE"
+			# tbd
+			# use Refinements in DateTime.now instead change binance lib code ()? check
+			#https://ruby-doc.org/core-2.3.0/doc/syntax/refinements_rdoc.html
 		elsif $latency>0 || $latency<-15 then
 			msg = "# PC with bad clock (latency=#{$latency} > 0), EXITING\n"
-			msg = msg + " # windows: $ENV:RECORD_ONLY=1\n"
-			msg = msg + " # linux: export RECORD_ONLY=1\n"
-
-			$log.info msg
+			msg += "(1) please run NTP client synchronizer in your PC\n"
+			msg += "(2) use a workaround for Testing - sending a timestamp adjusted to Binance - not recomended to REAL TRADING!\n"
+			msg += " # windows: $ENV:TRADE_REALTIME_DISABLE=1\n"
+			msg += " # linux: export TRADE_REALTIME_DISABLE=1\n"
+			$log_mon.info msg
 			sent_telegram( msg ) if $telegram_en
 			exit(-1)
 		else
-			$log.info "# considering diff=#{$diff}, measured latency=#{$latency}"
+			$log_mon.info "# considering diff=#{$diff}, measured latency=#{$latency}"
 		end
-
 	end
 
 	def new_btcusdt_aggTrade( obj )
@@ -61,8 +74,10 @@ class Trade
 		bull		= obj_data["m"] ? false: true
 
 		trade_obj = { :price => price, :time => trade_time.to_i, :event => event_time.to_i, :qty => qty, :bull => bull }
-		$rec_trade.record( trade_obj )
-		update_candle( trade_obj ) if !@record_only
+
+
+		$rec_trade.record( trade_obj ) if !@trade_rec_disable
+		update_candle( trade_obj )
 
 		if true then
 			message		= " %s -> %s [%3.2fms] : %.2f (%s) - %.6f" %
@@ -77,9 +92,9 @@ class Trade
 			#if f_val>=0.002 then
 			message = message + " " + "X"*qty.to_i
 			if bull then
-				$log.info message.cyan
+				$log_mon.info message.cyan
 			else
-				$log.info message.red
+				$log_mon.info message.red
 			end
 
 		end
@@ -100,11 +115,8 @@ class Trade
 			obj_data["b"].first[0],  # specific for future
 			obj_data["a"].first[0]  # specific for future
 		]
-		$log.info message.yellow
+		$log_mon.info message.yellow
 	end
-
-
-
 
 	def orderTradeUpdate( obj )
 		event_time = obj["E"]
@@ -120,9 +132,8 @@ class Trade
 			obj["o"]["ap"],		# ap Average Price
 			obj["o"]["X"],		# X  Order Status
 		]
-		$log.info message.yellow
+		$log_mon.info message.yellow
 	end
-
 
 	def accountUpdate( obj )
 		s_local = $s_local.to_f + $diff
@@ -140,12 +151,11 @@ class Trade
 					b["a"],
 					b["wb"]
 				]
-				$log.info message.yellow
+				$log_mon.info message.yellow
 			end
 		}
 	end
 end
-
 
 
 

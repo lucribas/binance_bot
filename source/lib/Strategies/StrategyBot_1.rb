@@ -1,6 +1,5 @@
 
-require 'telegram/bot'
-require_relative 'record_trade'
+
 
 # importante
 
@@ -36,18 +35,14 @@ require_relative 'record_trade'
 # considerar um thresold minido de 1 pip para entradas e saidas
 # observar stop los e gain
 
-# analises
-$position = 0
-$position_time = 0
-$trades_num  = 0
-$sum_profit_pos = 0.0
-$sum_profit_neg = 0.0
 
-# period in seconds
 CANDLE_PERIOD = 20.0
 $candle_period = CANDLE_PERIOD * 1000
 TREND_PERIOD = 0 * 1000
-PERIOD_ADVANCE = 1 * 1000
+
+VOL_SIZE = 20.0
+BODY_SIZE = 2.0
+
 
 CHK_VOL_TH = 0.1
 CHK_STOP_HISTERESIS = 0* 1000
@@ -60,7 +55,7 @@ SUM_THRESHOLD_FORECAST = 2.6
 SUM_THRESHOLD_REVERSION = 1.6
 SUM_THRESHOLD_DR = 0.7
 
-VOL_SIZE = 20.0
+
 VOL_THRESHOLD_FORECAST = 0.5	# 30% of previous
 VOL_THRESHOLD_REVERSION = 2.6	# 30% of previous
 
@@ -76,7 +71,6 @@ BODY_AVG_PERIOD = 4
 VOL_AVG_PERIOD = 4
 exit "error body period" if BODY_AVG_PERIOD > SMA_PERIOD
 
-BODY_SIZE = 2.0
 
 COOL_DOWN_TMP = 5*1000
 $cool_down_time_en = false
@@ -95,99 +89,8 @@ $start_bull_price = 0.0
 $start_trade_time = 0.0
 $sum_profit = 0.0
 
-# use $env:TELEGRAM_DISABLE=1 to disable
-$telegram_en = ((!ENV.include?("TELEGRAM_DISABLE")) && (!$play_trade) )
-puts "telegram_en: #{$telegram_en}"
-# binding.pry
-$message_buffer = ""
-
-require_relative 'candlestick_patterns'
-require_relative 'router'
-
 # indicators
 # cross_mma
-
-# def book_update( book )
-# end
-#
-#
-# def trade_update( trade )
-# end
-
-
-sent_telegram( "connected!" ) if $telegram_en
-
-def update_candle( trade )
-	c1 = $candle[$position]
-	# binding.pry
-	trade_price	= trade[:price].to_f
-	trade_time  = trade[:time].to_i
-	trade_qty	=  trade[:qty].to_f
-	trade_bull	=  trade[:bull]
-
-	#como tratar qndo nao tem trade
-
-	#inside candle
-	if trade_time < ($position_time + $candle_period) && $position_time != 0 then
-		c1[:low]		= trade_price if trade_price < c1[:low]
-		c1[:high] 		= trade_price if trade_price > c1[:high]
-		c1[:close]		= trade_price
-		c1[:time_close]	= trade_time
-		c1[:trade_qty]	= c1[:trade_qty] + trade_qty
-		c1[:bodysize]	= (c1[:close]-c1[:open]).abs;
-		c1[:sum_bull]	= c1[:sum_bull] + ( trade_bull ? trade_qty : 0.0 )
-		c1[:sum_bear]	= c1[:sum_bear] + ( (!trade_bull) ? trade_qty : 0.0 )
-
-		c1[:market]		=	(c1[:open] == c1[:close]) ? :LATERAL : (
-							(c1[:open] < c1[:close]) ? :BULL : :BEAR )
-		#c1[:market_chk]	= (c1[:bodysize] > BODY_SIZE) ? c1[:market] : :NONE
-		pos_adj = (c1[:time_close] % $candle_period).to_f
-		vol_adj = 1 #((pos_adj>0) ? ($candle_period / pos_adj) : 1)
-		c1[:market_chk]	= (c1[:bodysize] > 0.7*vol_adj*c1[:avg_bodysize]) ? c1[:market] : :NONE
-
-		#check_stop($candle, $position)
-
-		if trade_time > ($position_time + TREND_PERIOD) then
-			check_trend($candle, $position)
-		end
-	else
-		#closed candle
-		# process the closed current candlesticks
-		if $position > 1 then
-			pattern_classifier( $candle, $position )
-			make_forecast( $candle, $position )
-			$log.info  "candle[#{$position}]:  %s" % $candle[$position].inspect if $log.log_en?
-		end
-
-		# previous reversion
-		check_trend($candle, $position)
-
-		# initialize the next candlestick
-		$position = $position + 1
-		$position_time = trade_time - (trade_time % $candle_period)
-		# $log.info  "$position_time = #{$position_time}" if $log.log_en?
-		$candle[$position] = {
-			time:  $position_time,
-			time_open: trade_time,
-			time_close: trade_time,
-			open:  trade_price,
-			close: trade_price,
-			high:  trade_price,
-			low:   trade_price,
-			trade_qty: trade_qty,
-			sum_bull: ( trade_bull ? trade_qty : 0.0 ),
-			sum_bear: ( (!trade_bull) ? trade_qty : 0.0 ),
-			market:   :NONE,
-			market_chk: :NONE,
-			avg_bodysize: BODY_SIZE,
-			avg_trade_qty: VOL_SIZE,
-			bodysize: 0,
-			flags_bear: [false, false],
-			flags_bull: [false, false]
-		}
-	end
-end
-
 
 # calcular se o candle deve ficar acima ou abaixo
 # fazer a media ponderada
@@ -333,7 +236,7 @@ end
 def check_trend( candle, position )
 
 	if position < SMA_PERIOD then
-		$log.info "waiting for SMA_PERIOD: #{position} < #{SMA_PERIOD}"
+		$log_mon.info "waiting for SMA_PERIOD: #{position} < #{SMA_PERIOD}"
 		return
 	end
 
@@ -453,9 +356,9 @@ def check_trend( candle, position )
 	c1_thr_rev_bull		= ((c1_rev_bull_n  && c2_rev_bull_n)  && vol_th_flg_rev   && bull_ind)
 	c1_thr_rev_bear		= ((c1_rev_bear_n  && c2_rev_bear_n)  && vol_th_flg_rev   && bear_ind)
 
-	# $log.info  "hister = #{c1[:time_close]} - #{$start_trade_time}"
-	# $log.info  "hister = #{hister}, stp_gain_min=#{stp_gain_min}, stp_loss=#{stp_loss}"
-	# $log.info  "c123 = [#{c1[:market_chk]}, #{c2[:market_chk]}, #{c3[:market_chk]}]"
+	# $log_mon.info  "hister = #{c1[:time_close]} - #{$start_trade_time}"
+	# $log_mon.info  "hister = #{hister}, stp_gain_min=#{stp_gain_min}, stp_loss=#{stp_loss}"
+	# $log_mon.info  "c123 = [#{c1[:market_chk]}, #{c2[:market_chk]}, #{c3[:market_chk]}]"
 
 	rule_bull_03 = ( c2_rev_bull && c1_mkt_bull && c1_thr_rev_bull )
 	rule_bear_03 = ( c2_rev_bear && c1_mkt_bear && c1_thr_rev_bear )
@@ -515,29 +418,29 @@ def check_trend( candle, position )
 	trade_close_bear_ind = (on_charge_bear && rule_bear_close)
 	trade_start_bull_ind = ( (on_charge_notbull && rule_bull_start && vol_increased) && (!cooldown_stp) )
 
-	if $log.log_en? then
+	if $log_mon.log_en? then
 		if (c2_fore_bull && on_charge_notbull) then
-			$log.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bear] ]
+			$log_mon.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bear] ]
 		end
 		if (c2_rev_bull && on_charge_notbull) then
-			$log.info "waiting to confirm reversion BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bear] ]
+			$log_mon.info "waiting to confirm reversion BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bear] ]
 		end
 
 		if c2_fore_bear && (on_charge_notbear) then
 			# binding.pry if (c1[:sum_bear] > 203)
-			$log.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bull] ]
+			$log_mon.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, SUM_THRESHOLD_FORECAST*c1[:sum_bull] ]
 		end
 		if c2_rev_bear && (on_charge_notbear) then
-			$log.info "waiting to confirm reversion BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bull] ]
+			$log_mon.info "waiting to confirm reversion BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, SUM_THRESHOLD_REVERSION*c1[:sum_bull] ]
 		end
 	end
 	# fast close trade if Change trend
 	if (trade_close_bear_ind || trade_start_bull_ind) then
 			rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
 			rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
-			if $log.log_en? then
+			if $log_mon.log_en? then
 				rule_msg = $on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
-				$log.info rule_msg
+				$log_mon.info rule_msg
 			end
 			# binding.pry
 			msg = "rule_bull_01: FORECAST " if rule_bull_01
@@ -582,9 +485,9 @@ def check_trend( candle, position )
 
 			rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
 			rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
-			if $log.log_en? then
+			if $log_mon.log_en? then
 				rule_msg = $on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
-				$log.info rule_msg
+				$log_mon.info rule_msg
 			end
 
 			msg = "rule_bear_01: FORECAST " if rule_bear_01

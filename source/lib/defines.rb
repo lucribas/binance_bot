@@ -1,0 +1,7 @@
+
+LOG_MON_PREFIX = "log/MON_"
+LOG_TRADE_PREFIX = "log/TRADE_"
+REC_TRADE_PREFIX = "rec/TRADE_"
+
+LOG_EXTENSION = ".log"
+REG_EXTENSION = ".dmp"
