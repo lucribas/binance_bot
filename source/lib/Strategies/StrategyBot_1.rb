@@ -89,7 +89,6 @@ class StrategyBot_1
 		@log_mon = log_mon
 		exit "error body period" if param[:BODY_AVG_PERIOD] > param[:SMA_PERIOD]
 
-		param[:COOL_DOWN_TMP] = 5*1000
 		@cool_down_time_en = false
 		@cool_down_time = 0
 

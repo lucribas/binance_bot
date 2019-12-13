@@ -8,11 +8,13 @@
 
 class CandlestickPatternsClassifier
 
+	def initialize()
+
+	end
+
 	#+------------------------------------------------------------------+
 	#|   Function of determining of candlestick                         |
 	#+------------------------------------------------------------------+
-
-
 	def pattern( candle, position )
 
 		result = nil
