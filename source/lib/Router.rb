@@ -7,6 +7,10 @@ require 'binance'
 require 'pry'
 require 'json'
 
+@log_trades_num  = 0
+@sum_profit_pos = 0.0
+@sum_profit_neg = 0.0
+
 
 $sum_profit_pos_matrix = {}
 $sum_profit_neg_matrix = {}

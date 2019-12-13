@@ -1,4 +1,5 @@
 
+require_relative 'Utils'
 require_relative 'TradePersistence'
 require_relative 'TradeExpert'
 
@@ -24,6 +25,8 @@ class Trade
 		# TRADE_TEST_MODE
 		@trade_test_mode		= ENV.include?("TRADE_TEST_MODE")
 		$log_mon.info "Disabled real trading. Trades are emulated. Also disable the Account/Order monitors" if @trade_test_mode
+
+		@trade_expert = TradeExpert.new
 	end
 
 	def on_open()
@@ -41,7 +44,7 @@ class Trade
 	end
 
 	def check_latency()
-		$latency = binance_latency(num: 1)
+		$latency = Utils.binance_latency(num: 1)
 
 		# workaround to windows PC with bad clock
 		if @trade_realtime_disable then
@@ -77,7 +80,7 @@ class Trade
 
 
 		$rec_trade.record( trade_obj ) if !@trade_rec_disable
-		update_candle( trade_obj )
+		@trade_expert.process_ticketTrade( trade_obj )
 
 		if true then
 			message		= " %s -> %s [%3.2fms] : %.2f (%s) - %.6f" %
@@ -106,6 +109,10 @@ class Trade
 		obj_data	= obj["data"]
 		event_time	= obj_data["E"]
 		trade_time	= obj_data["T"]
+
+		#book_obj = {}
+		#@trade_expert.process_book_update( book_obj )
+
 		#binding.pry
 		message		= " %s -> %s [%3.2fms] : %.2f - %.2f" %
 		[
@@ -121,6 +128,10 @@ class Trade
 	def orderTradeUpdate( obj )
 		event_time = obj["E"]
 		trade_time = obj["T"]
+
+		#order_obj = { }
+		#@trade_expert.process_orderTradeUpdate( order_obj )
+
 		# puts obj.inspect
 		message = "[%s] %s -> %s : %s %s at %s (%s)" %
 		[

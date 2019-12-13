@@ -3,7 +3,6 @@ require 'binance'
 require 'eventmachine'
 require 'pry'
 require 'json'
-require 'net/ntp'
 require 'bigdecimal'
 
 # telegram and binance keys
@@ -40,7 +39,7 @@ $future_ws    = Binance::Client::WebSocketFuture.new
 $listen_key = $future_rest.listenKey["listenKey"]
 puts "Listener Key = #{$listen_key}"
 
-# ntp_test()
+# Utils.ntp_test()
 
 $td = Trade.new()
 $td.check_latency()
