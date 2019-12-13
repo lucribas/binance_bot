@@ -10,10 +10,10 @@ $log_trades_num  = 0
 $sum_profit_pos = 0.0
 $sum_profit_neg = 0.0
 
-# period in seconds
-CANDLE_PERIOD = 20.0
-$candle_period = CANDLE_PERIOD * 1000
-TREND_PERIOD = 0 * 1000
+# # period in seconds
+# CANDLE_PERIOD = 60.0
+# $candle_period = CANDLE_PERIOD * 1000
+# TREND_PERIOD = 0 * 1000
 
 VOL_SIZE = 20.0
 BODY_SIZE = 2.0
@@ -82,9 +82,9 @@ def update_candle( trade )
 
 		#check_stop($candle, $position)
 
-		if trade_time > ($position_time + TREND_PERIOD) then
+		# if trade_time > ($position_time + TREND_PERIOD) then
 			check_trend($candle, $position)
-		end
+		# end
 	else
 		#closed candle
 		# process the closed current candlesticks

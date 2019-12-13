@@ -111,7 +111,7 @@ end
 
 
 def print_trade( trade_obj )
-	return if $log_mon.log_en?
+	return if !$log_mon.log_en?
 	event_time	= trade_obj[:event]
 	trade_time	= trade_obj[:time]
 	bull		= trade_obj[:bull]

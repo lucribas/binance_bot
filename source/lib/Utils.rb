@@ -3,7 +3,7 @@
 
 
 
-def ntp_test()
+def ntp_test(diff: 0, num: 5)
 	# binding.pry
 	$log_mon.info "-"*30
 	$log_mon.info "Calibrating current time against NTP server:"
@@ -18,14 +18,13 @@ def ntp_test()
 	ntp = Net::NTP.get.time
 	#run
 	tot_diff = 0
-	num = 5
 	for i in 1..num do
 		ntp = Net::NTP.get.time
 		local = Time.now
-		#$log_mon.info "local= #{local.to_s}"
-		#$log_mon.info "ntp=   #{ntp.to_s}"
+		$log_mon.info "local= #{local.to_s}"
+		$log_mon.info "ntp=   #{ntp.to_s}"
 		diff = ntp.to_f-local.to_f
-		#$log_mon.info "diff = [%.6fs]" % [(diff)]
+		$log_mon.info "diff = [%.6fs]" % [(diff)]
 		tot_diff = tot_diff + diff
 	end
 	diff = tot_diff/num

@@ -36,7 +36,7 @@
 # observar stop los e gain
 
 
-CANDLE_PERIOD = 20.0
+CANDLE_PERIOD = 160.0
 $candle_period = CANDLE_PERIOD * 1000
 TREND_PERIOD = 0 * 1000
 
@@ -298,6 +298,7 @@ def check_trend( candle, position )
 
 	stop_adp		= -(hilo3+hilo2)
 	stp_loss		= ( (hister > CHK_STOP_HISTERESIS) && (profit < stop_adp) && (on_charge_notnone) )
+	stp_loss		= ( (profit < stop_adp) && (on_charge_notnone) )
 	stp_loss2		= false #( (hister > CHK_STOP_HISTERESIS) && (profit < STOP_LOSS/3) && (on_charge_notnone) )
 
 
@@ -457,7 +458,7 @@ def check_trend( candle, position )
 	if trade_close_bear_ind then
 		# binding.pry if (( "%.2f" % profit ) == "-4.54" )
 		rule_bear_close_msg = [rule_bull_03, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
-		trade_close_bear( close_rule: rule_bear_close_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
+		trade_close_bear( close_rule: rule_bear_close_msg, time: c1[:time_close], price: c1[:close], start_bear_price: $start_bear_price, profit: profit, msg: msg )
 		# binding.pry if rule_bear_close_msg == "000"
 
 		# cool down after close
@@ -502,7 +503,7 @@ def check_trend( candle, position )
 
 	if trade_close_bull_en then
 		rule_bull_close_msg = [rule_bear_03, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
-		trade_close_bull( close_rule: rule_bull_close_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
+		trade_close_bull( close_rule: rule_bull_close_msg, time: c1[:time_close], price: c1[:close], start_bull_price: $start_bull_price, profit: profit, msg: msg )
 
 		# cool down after close
 		trade_start_bear_en = false

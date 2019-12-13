@@ -9,18 +9,20 @@ require 'bigdecimal'
 # telegram and binance keys
 require_relative 'secret_keys'
 
-
 require_relative 'lib/defines'
 require_relative 'lib/Logger'
 require_relative 'lib/Utils'
 require_relative 'lib/Account'
 require_relative 'lib/Trade'
 
-# windows: $ENV:TRADE_EN=1
-# linux: export TRADE_EN=1
-# $env:TELEGRAM_DISABLE=1
-# windows: $ENV:RECORD_ONLY=1
-# linux: export RECORD_ONLY=1
+
+# TRADE_REC_DISABLE
+# TRADE_REALTIME_DISABLE
+# TRADE_TEST_MODE
+# TELEGRAM_DISABLE
+# example
+# windows: $ENV:TELEGRAM_DISABLE=1
+# linux: export TELEGRAM_DISABLE=1
 
 # current timestamp
 $timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
@@ -38,6 +40,8 @@ $future_ws    = Binance::Client::WebSocketFuture.new
 $listen_key = $future_rest.listenKey["listenKey"]
 puts "Listener Key = #{$listen_key}"
 
+# ntp_test()
+
 $td = Trade.new()
 $td.check_latency()
 
@@ -47,7 +51,7 @@ $ac.update()
 # binding.pry
 # exit
 
-
+# about eventmachine
 # => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
 # => https://pt.slideshare.net/OmerGazit/ruby-underground-event-machine
 

@@ -29,7 +29,7 @@ def update_profit( profit:, start_rule:, close_rule: )
 end
 
 def get_profit_sts( profit: 0)
-	return "profit=%.2f  [%d, %.2f, %.2f]  liq=%.2f  efic=%.4f" % [profit, $log_trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit, $sum_profit/$log_trades_num]
+	return "profit=%8.2f  [%4d, %8.2f, %8.2f]  liq=%8.2f  efic=%8.4f    \tbar = [%s]" % [profit, $log_trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit, $sum_profit/$log_trades_num, "X"*profit.abs.to_i]
 end
 
 def get_profit_report()
@@ -41,7 +41,7 @@ def get_profit_report()
 end
 
 
-def trade_close_bear( close_rule:, time:, price:, profit:, msg: )
+def trade_close_bear( close_rule:, time:, start_bear_price:, price:, profit:, msg: )
 	if $on_charge == :BEAR then
 		$start_trade_time = time
 		update_profit( profit: profit, start_rule: $start_bear_rule_sv, close_rule: close_rule)
@@ -49,15 +49,22 @@ def trade_close_bear( close_rule:, time:, price:, profit:, msg: )
 		$log_mon.info "N"*30 if $log_mon.log_en?
 		$log_mon.info msg.yellow if $log_mon.log_en?
 		stime = format_time( time )
-		(puts stime + ": CLOSE BEAR: buy  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
-		send_trade_info	stime + msg
-		send_trade_info "CLOSE BEAR: buy  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ]
+
+		t_msg = " CLOSE BEAR: buy  (%4.2f->%4.2f)\t\t%s" % [start_bear_price, price, get_profit_sts(profit: profit) ]
+		if profit>0 then
+			puts (stime + ":" + t_msg).green #if (profit.abs > 30)
+		else
+			puts (stime + ":" + t_msg).red #if (profit.abs > 30)
+		end
+
+		send_trade_info	stime + t_msg
+		send_trade_info t_msg
 		send_trade_info_send()
 	end
 end
 
 
-def trade_close_bull( close_rule:, time:, price:, profit:, msg: )
+def trade_close_bull( close_rule:, time:, price:, start_bull_price:, profit:, msg: )
 	if $on_charge == :BULL then
 		$start_trade_time = time
 		update_profit( profit: profit, start_rule: $start_bull_rule_sv, close_rule: close_rule)
@@ -65,9 +72,17 @@ def trade_close_bull( close_rule:, time:, price:, profit:, msg: )
 		$log_mon.info "N"*30 if $log_mon.log_en?
 		$log_mon.info msg.yellow if $log_mon.log_en?
 		stime = format_time( time )
-		(puts stime + ": CLOSE BULL: sell  %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ] ) if (profit.abs > 30)
-		send_trade_info	stime + msg
-		send_trade_info "CLOSE BULL: sell %.2f\t\t%s" % [price, get_profit_sts(profit: profit) ]
+
+		t_msg = " CLOSE BULL: sell (%4.2f->%4.2f)\t\t%s" % [start_bull_price, price, get_profit_sts(profit: profit) ]
+
+		if profit>0 then
+			puts (stime + ":" + t_msg).green #if (profit.abs > 30)
+		else
+			puts (stime + ":" + t_msg).red #if (profit.abs > 30)
+		end
+
+		send_trade_info	stime + t_msg
+		send_trade_info t_msg
 		send_trade_info_send()
 	end
 end
