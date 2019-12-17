@@ -41,7 +41,7 @@ puts "Listener Key = #{$listen_key}"
 
 # Utils.ntp_test()
 
-$td = Trade.new()
+$td = Trade.new( rec_trade: $rec_trade )
 $td.check_latency()
 
 $ac = Account.new()

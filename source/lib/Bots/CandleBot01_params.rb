@@ -3,12 +3,12 @@
 # a ideia é depois fazer uma classe capaz de gerar instancias de parametros usando ranges
 # depois fazer otimização
 
-class StrategyBot_1_params
+class CandleBot01_params
 	attr_reader :param
 
 	def initialize( set: 0)
 		@param = {}
-		select( set )
+		select( set: set )
 	end
 
 	def select( set: )

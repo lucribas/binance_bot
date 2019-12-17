@@ -51,7 +51,12 @@ class CandlestickPatterns
 		@param = param
 	end
 
-	def pattern_classifier( candle, position )
+
+	def process_closed_candle( candle:, position: )
+		pattern_classifier( candle: candle, position: position )
+	end
+
+	def pattern_classifier( candle:, position: )
 
 		b	= candle[position-1]
 		c	= candle[position]
@@ -86,7 +91,7 @@ class CandlestickPatterns
 		avg_bodysize = 0
 		sum_bodysize = 0
 		num	= 0
-		for i in [1, position-@param[:BODY_AVG_PERIOD]].max..position do
+		for i in [1, position-@param[:BODY_AVG_PERIOD]].max.to_i..position do
 			if candle[i][:type] != :CAND_DOJI && candle[i][:bodysize] > 2 then
 				sum_bodysize	= sum_bodysize + candle[i][:bodysize]
 				num				= num + 1

@@ -35,9 +35,6 @@
 # considerar um thresold minido de 1 pip para entradas e saidas
 # observar stop los e gain
 
-require_relative 'Signals/CandlestickPatterns'
-
-
 
 
 # indicators
@@ -48,49 +45,48 @@ require_relative 'Signals/CandlestickPatterns'
 # usar no lugar do close
 
 
-class StrategyBot_1
+class CandleBot01
 
-
-
-	@patterns_as_bull = [
-				# pattern, confirm period need, confirm volume need, confirm body need
-				:INV_HAMMER_BULL,
-				:BELT_HOLD_BULL,
-				:ENGULFING_BULL,
-				:HARAMI_CROSS_BULL,
-				:HARAMI_BULL,
-				:DOJI_STAR_BULL,
-				:PIERCING_LINE_BULL,
-				:MEETING_LINES_BULL,
-				:MATCHING_LOW_BULL,
-				:HOMING_PIGEON_BULL,
-				:KICKING_BULL
-			].freeze
-
-	@patterns_as_bear = [
-				:HAMMER_BEAR,
-				:INV_HAMMER_BEAR,
-				:SHOOTING_STAR_BEAR,
-				:BELT_HOLD_BEAR,
-				:ENGULFING_BEAR,
-				:HARAMI_CROSS_BEAR,
-				:HARAMI_BEAR,
-				:DOJI_STAR_BEAR,
-				:DARK_CLOUD_COVER_BEAR,
-				:MEETING_LINES_BEAR,
-				:KICKING_BEAR,
-				:ON_NECK_LINE_BEAR,
-				:IN_NECK_LINE_BEAR,
-				:THRUSTING_LINE_BEAR
-			].freeze
 
 	def initialize( param:, log_mon: )
 		@param = param
 		@log_mon = log_mon
-		exit "error body period" if param[:BODY_AVG_PERIOD] > param[:SMA_PERIOD]
+		exit "error body period" if @param[:BODY_AVG_PERIOD] > @param[:SMA_PERIOD]
 
 		@cool_down_time_en = false
 		@cool_down_time = 0
+
+		@patterns_as_bull = [
+					# pattern, confirm period need, confirm volume need, confirm body need
+					:INV_HAMMER_BULL,
+					:BELT_HOLD_BULL,
+					:ENGULFING_BULL,
+					:HARAMI_CROSS_BULL,
+					:HARAMI_BULL,
+					:DOJI_STAR_BULL,
+					:PIERCING_LINE_BULL,
+					:MEETING_LINES_BULL,
+					:MATCHING_LOW_BULL,
+					:HOMING_PIGEON_BULL,
+					:KICKING_BULL
+				].freeze
+
+		@patterns_as_bear = [
+					:HAMMER_BEAR,
+					:INV_HAMMER_BEAR,
+					:SHOOTING_STAR_BEAR,
+					:BELT_HOLD_BEAR,
+					:ENGULFING_BEAR,
+					:HARAMI_CROSS_BEAR,
+					:HARAMI_BEAR,
+					:DOJI_STAR_BEAR,
+					:DARK_CLOUD_COVER_BEAR,
+					:MEETING_LINES_BEAR,
+					:KICKING_BEAR,
+					:ON_NECK_LINE_BEAR,
+					:IN_NECK_LINE_BEAR,
+					:THRUSTING_LINE_BEAR
+				].freeze
 
 
 		@renko = []
@@ -107,8 +103,28 @@ class StrategyBot_1
 
 	end
 
+	def add_router( router: )
+		@r = router
+	end
 
-	def make_forecast( candle, position )
+
+	# -----------------------------------------------------------------------------------
+
+	def process_closed_candle( candle:, position: )
+		make_forecast( candle: candle, position: position )
+		check_stop( candle: candle, position: position )
+		check_trend( candle: candle, position: position )
+	end
+
+	def process_open_candle( candle:, position: )
+		check_trend( candle: candle, position: position )
+	end
+
+
+	# -----------------------------------------------------------------------------------
+
+
+	def make_forecast( candle:, position: )
 
 	  # verifica se tem pattern pendente
 	  # verifica se confirma tendencia
@@ -175,34 +191,34 @@ class StrategyBot_1
 
 
 	## ADICIONAR MMA e cruzamento
-	def check_stop( candle, position )
+	def check_stop( candle:, position: )
 
-		return if position < param[:SMA_PERIOD]
+		return if position < @param[:SMA_PERIOD]
 
 		# forecast, trend, reversion only available in c2
 		return if position <= 10
 		c1 = candle[position]
 
-		if on_charge_bear then
+		if @on_charge_bear then
 			profit = @start_bear_price - c1[:close]
-		elsif on_charge_bull then
+		elsif @on_charge_bull then
 			profit = c1[:close] - @start_bull_price
 		else
 			profit = 0.0
 		end
 
 		hister			= (c1[:time_close] - @start_trade_time)
-		stp_loss		= ( (hister > 2.0*1000) && (profit < -5.0) && (on_charge_notnone) )
+		stp_loss		= ( (hister > 2.0*1000) && (profit < -5.0) && (@on_charge_notnone) )
 		rule_msg = "fstp"
 		msg = "fast STOP_LOSS"
 
-		if (on_charge_bear && stp_loss) then
+		if (@on_charge_bear && stp_loss) then
 			# binding.pry if (( "%.2f" % profit ) == "-4.54" )
-			trade_close_bear( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
+			@r.trade_close_bear( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 		end
 
-		if (on_charge_bull && stp_loss) then
-			trade_close_bull( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
+		if (@on_charge_bull && stp_loss) then
+			@r.trade_close_bull( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 		end
 	end
 
@@ -212,10 +228,10 @@ class StrategyBot_1
 	#+------------------------------------------------------------------+
 
 	## ADICIONAR MMA e cruzamento
-	def check_trend( candle, position )
+	def check_trend( candle:, position: )
 
-		if position < param[:SMA_PERIOD] then
-			@log_mon.info "waiting for SMA_PERIOD: #{position} < #{param[:SMA_PERIOD]}"
+		if position < @param[:SMA_PERIOD] then
+			@log_mon.info "waiting for SMA_PERIOD: #{position} < #{@param[:SMA_PERIOD]}"
 			return
 		end
 
@@ -227,16 +243,16 @@ class StrategyBot_1
 		c4 = candle[position-3]
 
 
-		on_charge_bull = (@on_charge == :BULL)
-		on_charge_bear = (@on_charge == :BEAR)
-		on_charge_none = (@on_charge == :NONE)
-		on_charge_notnone = (!on_charge_none)
-		on_charge_notbear = (!on_charge_bear)
-		on_charge_notbull = (!on_charge_bull)
+		@on_charge_bull = (@on_charge == :BULL)
+		@on_charge_bear = (@on_charge == :BEAR)
+		@on_charge_none = (@on_charge == :NONE)
+		@on_charge_notnone = (!@on_charge_none)
+		@on_charge_notbear = (!@on_charge_bear)
+		@on_charge_notbull = (!@on_charge_bull)
 
-		if on_charge_bear then
+		if @on_charge_bear then
 			profit = @start_bear_price - c1[:close]
-		elsif on_charge_bull then
+		elsif @on_charge_bull then
 			profit = c1[:close] - @start_bull_price
 		else
 			profit = 0.0
@@ -267,30 +283,30 @@ class StrategyBot_1
 		hilo2 = (c2[:high]-c2[:low]).abs
 		hilo3 = (c3[:high]-c3[:low]).abs
 		hilo4 = (c4[:high]-c4[:low]).abs
-		pos_adj = (c1[:time_close] % param[:CANDLE_PERIOD]).to_f
-		vol_adj = ((pos_adj>0) ? (param[:CANDLE_PERIOD] / pos_adj) : 1)
+		pos_adj = (c1[:time_close] % @param[:CANDLE_PERIOD]).to_f
+		vol_adj = ((pos_adj>0) ? (@param[:CANDLE_PERIOD] / pos_adj) : 1)
 
 		hister			= (c1[:time_close] - @start_trade_time)
-		stp_gain_min	= ( (hister > param[:CHK_GAIN_HISTERESIS]) && (profit < param[:GAIN_MIN]) && (on_charge_notnone) )
-		# stp_loss		= ( (hister > param[:CHK_STOP_HISTERESIS]) && (profit < param[:STOP_LOSS]) && (on_charge_notnone) )
-		# stp_loss		= ( (hister > param[:CHK_STOP_HISTERESIS]) && (profit < param[:STOP_LOSS]) && (on_charge_notnone) )
+		stp_gain_min	= ( (hister > @param[:CHK_GAIN_HISTERESIS]) && (profit < @param[:GAIN_MIN]) && (@on_charge_notnone) )
+		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]) && (@on_charge_notnone) )
+		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]) && (@on_charge_notnone) )
 
 		stop_adp		= -(hilo3+hilo2)
-		stp_loss		= ( (hister > param[:CHK_STOP_HISTERESIS]) && (profit < stop_adp) && (on_charge_notnone) )
-		stp_loss		= ( (profit < stop_adp) && (on_charge_notnone) )
-		stp_loss2		= false #( (hister > param[:CHK_STOP_HISTERESIS]) && (profit < param[:STOP_LOSS]/3) && (on_charge_notnone) )
+		stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < stop_adp) && (@on_charge_notnone) )
+		stp_loss		= ( (profit < stop_adp) && (@on_charge_notnone) )
+		stp_loss2		= false #( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]/3) && (@on_charge_notnone) )
 
 
-		vol_th_fore_vl	= [ param[:VOL_THRESHOLD_FORECAST]*c1[:avg_trade_qty], param[:VOL_THRESHOLD_FORECAST]*param[:VOL_SIZE]].min
-		vol_th_rev_vl	= [ param[:VOL_THRESHOLD_REVERSION]*c1[:avg_trade_qty], param[:VOL_THRESHOLD_REVERSION]*param[:VOL_SIZE]].min
-		vol_th_fore_vl	= [ param[:VOL_THRESHOLD_FORECAST]*c1[:avg_trade_qty], param[:VOL_THRESHOLD_FORECAST]*param[:VOL_SIZE]].min
-		vol_th_rev_vl	= [ param[:VOL_THRESHOLD_REVERSION]*c1[:avg_trade_qty], param[:VOL_THRESHOLD_REVERSION]*param[:VOL_SIZE]].min
+		vol_th_fore_vl	= [ @param[:VOL_THRESHOLD_FORECAST]*c1[:avg_trade_qty], @param[:VOL_THRESHOLD_FORECAST]*@param[:VOL_SIZE]].min
+		vol_th_rev_vl	= [ @param[:VOL_THRESHOLD_REVERSION]*c1[:avg_trade_qty], @param[:VOL_THRESHOLD_REVERSION]*@param[:VOL_SIZE]].min
+		vol_th_fore_vl	= [ @param[:VOL_THRESHOLD_FORECAST]*c1[:avg_trade_qty], @param[:VOL_THRESHOLD_FORECAST]*@param[:VOL_SIZE]].min
+		vol_th_rev_vl	= [ @param[:VOL_THRESHOLD_REVERSION]*c1[:avg_trade_qty], @param[:VOL_THRESHOLD_REVERSION]*@param[:VOL_SIZE]].min
 
 		# vol_th_fore_vl = c3[:avg_trade_qty]
 		# vol_th_rev_vl = c3[:avg_trade_qty]
 		#
-		# c1_thr_fore_bull	= ( vol_th_flg  && (c1[:sum_bull] >= param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear]) )
-		# c1_thr_fore_bear	= ( vol_th_flg  && (c1[:sum_bear] >= param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull]) )
+		# c1_thr_fore_bull	= ( vol_th_flg  && (c1[:sum_bull] >= @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear]) )
+		# c1_thr_fore_bear	= ( vol_th_flg  && (c1[:sum_bear] >= @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull]) )
 		# c1_thr_rev_bull		= ( vol_th_flg  && (c1[:sum_bull] >= SUM_THRESHOLD_REVERSION*c1[:sum_bear]) )
 		# c1_thr_rev_bear		= ( vol_th_flg  && (c1[:sum_bear] >= SUM_THRESHOLD_REVERSION*c1[:sum_bull]) )
 		#
@@ -320,15 +336,15 @@ class StrategyBot_1
 		 vol_th_flg_fore =  ( (c3[:trade_qty]<c2[:trade_qty]) && (c2[:trade_qty]<vol_adj*c1[:trade_qty]) ) && (hilo2>5.0)
 		 vol_th_flg_rev =  ( (c3[:trade_qty]<c2[:trade_qty]) && (c2[:trade_qty]<vol_adj*c1[:trade_qty]) ) && (hilo2>20.0)
 
-		c2_fore_bull_n	= c2_fore_bull #&& (c2[:sum_bull] >= param[:SUM_THRESHOLD_DR]*param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bear])
-		c2_fore_bear_n	= c2_fore_bear #&& (c2[:sum_bear] >= param[:SUM_THRESHOLD_DR]*param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bull])
-		c2_rev_bull_n	= c2_rev_bull #&& (c2[:sum_bull] >= param[:SUM_THRESHOLD_DR]*param[:SUM_THRESHOLD_REVERSION]*c2[:sum_bear])
-		c2_rev_bear_n	= c2_rev_bear #&& (c2[:sum_bear] >= param[:SUM_THRESHOLD_DR]*param[:SUM_THRESHOLD_REVERSION]*c2[:sum_bull])
+		c2_fore_bull_n	= c2_fore_bull #&& (c2[:sum_bull] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bear])
+		c2_fore_bear_n	= c2_fore_bear #&& (c2[:sum_bear] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bull])
+		c2_rev_bull_n	= c2_rev_bull #&& (c2[:sum_bull] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_REVERSION]*c2[:sum_bear])
+		c2_rev_bear_n	= c2_rev_bear #&& (c2[:sum_bear] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_REVERSION]*c2[:sum_bull])
 
-		c1_fore_bull_n	= (c1[:sum_bull] >= param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear])
-		c1_fore_bear_n	= (c1[:sum_bear] >= param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull])
-		c1_rev_bull_n	= (c1[:sum_bull] >= param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bear])
-		c1_rev_bear_n	= (c1[:sum_bear] >= param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bull])
+		c1_fore_bull_n	= (c1[:sum_bull] >= @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear])
+		c1_fore_bear_n	= (c1[:sum_bear] >= @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull])
+		c1_rev_bull_n	= (c1[:sum_bull] >= @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bear])
+		c1_rev_bear_n	= (c1[:sum_bear] >= @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bull])
 
 
 		c1_thr_fore_bull	= ((c1_fore_bull_n && c2_fore_bull_n) && vol_th_flg_fore  && bull_ind)
@@ -390,28 +406,28 @@ class StrategyBot_1
 		#vol_increased = ( c3[:trade_qty] < c2[:trade_qty] )
 		# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) )
 
-		cooldown_stp = ((@cool_down_time_en == true) && (c1[:time_close] < (@cool_down_time + param[:COOL_DOWN_TMP])))
+		cooldown_stp = ((@cool_down_time_en == true) && (c1[:time_close] < (@cool_down_time + @param[:COOL_DOWN_TMP])))
 		# @cooldown_stp_l = @cooldown_stp_c
 		# @cooldown_stp_c = cooldown_stp
 		# binding.pry if (@cooldown_stp_l==true) && (@cooldown_stp_c==false)
 
-		trade_close_bear_ind = (on_charge_bear && rule_bear_close)
-		trade_start_bull_ind = ( (on_charge_notbull && rule_bull_start && vol_increased) && (!cooldown_stp) )
+		trade_close_bear_ind = (@on_charge_bear && rule_bear_close)
+		trade_start_bull_ind = ( (@on_charge_notbull && rule_bull_start && vol_increased) && (!cooldown_stp) )
 
 		if @log_mon.log_en? then
-			if (c2_fore_bull && on_charge_notbull) then
-				@log_mon.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear] ]
+			if (c2_fore_bull && @on_charge_notbull) then
+				@log_mon.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear] ]
 			end
-			if (c2_rev_bull && on_charge_notbull) then
-				@log_mon.info "waiting to confirm reversion BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bear] ]
+			if (c2_rev_bull && @on_charge_notbull) then
+				@log_mon.info "waiting to confirm reversion BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bear] ]
 			end
 
-			if c2_fore_bear && (on_charge_notbear) then
+			if c2_fore_bear && (@on_charge_notbear) then
 				# binding.pry if (c1[:sum_bear] > 203)
-				@log_mon.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull] ]
+				@log_mon.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull] ]
 			end
-			if c2_rev_bear && (on_charge_notbear) then
-				@log_mon.info "waiting to confirm reversion BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bull] ]
+			if c2_rev_bear && (@on_charge_notbear) then
+				@log_mon.info "waiting to confirm reversion BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bull] ]
 			end
 		end
 		# fast close trade if Change trend
@@ -437,7 +453,7 @@ class StrategyBot_1
 		if trade_close_bear_ind then
 			# binding.pry if (( "%.2f" % profit ) == "-4.54" )
 			rule_bear_close_msg = [rule_bull_03, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
-			trade_close_bear( close_rule: rule_bear_close_msg, time: c1[:time_close], price: c1[:close], start_bear_price: @start_bear_price, profit: profit, msg: msg )
+			@r.trade_close_bear( close_rule: rule_bear_close_msg, time: c1[:time_close], price: c1[:close], start_bear_price: @start_bear_price, profit: profit, msg: msg )
 			# binding.pry if rule_bear_close_msg == "000"
 
 			# cool down after close
@@ -448,7 +464,7 @@ class StrategyBot_1
 		# start confirmed
 		if trade_start_bull_ind then
 			rule_bull_start_msg	= [ rule_bull_01, rule_bull_02 ].map { |v| v ? 1 : 0 }.join
-			trade_start_bull( start_rule: rule_bull_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
+			@r.trade_start_bull( start_rule: rule_bull_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
 			@cool_down_time_en = false
 			return
 		end
@@ -456,9 +472,9 @@ class StrategyBot_1
 
 
 
-		trade_close_bull_en = (on_charge_bull && rule_bull_close)
+		trade_close_bull_en = (@on_charge_bull && rule_bull_close)
 
-		trade_start_bear_en = ((on_charge_notbear && rule_bear_start && vol_increased) && (!cooldown_stp) )
+		trade_start_bear_en = ((@on_charge_notbear && rule_bear_start && vol_increased) && (!cooldown_stp) )
 
 		# fast close trade if Change trend
 		if ( trade_close_bull_en || trade_start_bear_en ) then
@@ -482,7 +498,7 @@ class StrategyBot_1
 
 		if trade_close_bull_en then
 			rule_bull_close_msg = [rule_bear_03, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
-			trade_close_bull( close_rule: rule_bull_close_msg, time: c1[:time_close], price: c1[:close], start_bull_price: @start_bull_price, profit: profit, msg: msg )
+			@r.trade_close_bull( close_rule: rule_bull_close_msg, time: c1[:time_close], price: c1[:close], start_bull_price: @start_bull_price, profit: profit, msg: msg )
 
 			# cool down after close
 			trade_start_bear_en = false
@@ -491,7 +507,7 @@ class StrategyBot_1
 		end
 		if trade_start_bear_en then
 			rule_bear_start_msg	= [ rule_bear_01, rule_bear_02 ].map { |v| v ? 1 : 0 }.join
-			trade_start_bear( start_rule: rule_bear_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
+			@r.trade_start_bear( start_rule: rule_bear_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
 			@cool_down_time_en = false
 			return
 		end
