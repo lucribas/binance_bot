@@ -10,6 +10,7 @@ require 'json'
 $log_trades_num  = 0
 $sum_profit_pos = 0.0
 $sum_profit_neg = 0.0
+$sum_profit = 0
 
 
 $sum_profit_pos_matrix = {}
@@ -36,7 +37,7 @@ class Router
 	end
 
 	def get_profit_sts( profit: 0)
-		return "profit=%8.2f  [%4d, %8.2f, %8.2f]  liq=%8.2f  efic=%8.4f    \tbar = [%s]" % [profit, $log_trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit, $sum_profit/$log_trades_num, "X"*profit.abs.to_i]
+		return "profit=%8.2f  [%4d, %8.2f, %8.2f]  liq=%8.2f  efic=%8.4f    \tbar = [%s]" % [profit, $log_trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit, $sum_profit/$log_trades_num, "X"*profit.abs.to_i] if $log_trades_num>0
 	end
 
 	def get_profit_report()

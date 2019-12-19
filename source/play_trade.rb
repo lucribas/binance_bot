@@ -5,10 +5,8 @@ require 'pry'
 require 'json'
 require 'net/ntp'
 require 'bigdecimal'
-
-$profiler_en = false
-
-require 'ruby-prof' if $profiler_en
+require 'ruby-prof'
+require 'cli'
 
 require_relative 'lib/defines'
 require_relative 'lib/Logger'
@@ -17,11 +15,45 @@ require_relative 'lib/Trade'
 require_relative 'lib/Account'
 
 
-def log_init()
-	# -- rec trade
-	$play_file_name = "rec/TRADE_20191209_105843_snapshot.dmp"
-	$play_file_name = "rec/TRADE_20191204_001437.dmp"
+#---------------------------
+# MAIN
+#---------------------------
 
+# Help
+puts "="*120
+puts "play_trade"
+puts "="*120
+puts "This code can:"
+puts "- play recored tickets. (TradePersistence.rb)"
+puts "- process tickets and generate signals and patterns. (TradeExpert.rb, Candle.rb, CandlestickPatterns.rb, CandlestickPatternsClassifier.rb)"
+puts "- process signals and patterns with Bots. (CandleBot01.rb)"
+puts "-"*120
+# puts "how its works:"
+# puts "-"*120
+# puts "Instructions:"
+# puts ""
+puts ""
+puts "-"*120
+puts ""
+
+# Check Command Line Arguments
+$telegram_force_disabled = true
+
+settings = CLI.new do
+	description	"Tradener options"
+	switch	:debug,		:short => :d,	:required => false,	:description => "Enables debug information"
+	switch	:profiler,	:short => :p,	:required => false,	:description => "Enables profiler"
+	switch	:telegram,	:short => :t,	:required => false,	:description => "Enables Telegram"
+	option	:rec,		:short => :r,	:required => true,	:description => "file name (#{REG_EXTENSION}) of record file with trades."
+end.parse! do |settings|
+	$debug						= true if !settings.debug.nil?
+	$profiler_en				= true if !settings.profiler.nil?
+	$telegram_force_disabled	= false if !settings.telegram.nil?
+	$play_file_name				= settings.rec if !settings.rec.nil?
+end
+
+
+def log_init()
 	# Logger
 	# current timestamp
 	$timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
@@ -29,7 +61,7 @@ def log_init()
 	$log_mon = Logger.new( filename: LOG_MON_PREFIX + $timestamp + LOG_EXTENSION, fileout_en: false, stdout_en: false)
 	$log_trade = Logger.new( filename: LOG_TRADE_PREFIX + $timestamp + LOG_EXTENSION, fileout_en: true, stdout_en: false)
 
-	$td = Trade.new( log_mon: $log_mon )
+	$td = Trade.new( log_mon: $log_mon, future_rest: nil )
 	$ac = Account.new()
 end
 

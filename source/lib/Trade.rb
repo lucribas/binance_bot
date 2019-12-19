@@ -15,9 +15,15 @@ class Trade
 	attr_accessor :trade_realtime_disable
 	attr_accessor :trade_test_mode
 
-	def initialize( rec_trade: nil, log_mon: nil)
+	def initialize( rec_trade: nil, log_mon: nil, future_rest:)
 		@rec_trade = rec_trade
 		@log_mon = log_mon
+		@future_rest = future_rest
+
+		# TRADE_REC_DISABLE
+		@trade_disable		= ENV.include?("TRADE_DISABLE")
+		@log_mon.info "Disabled trade" if @trade_disable
+
 		# TRADE_REC_DISABLE
 		@trade_rec_disable		= ENV.include?("TRADE_REC_DISABLE")
 		@log_mon.info "Disabled trade recording" if @trade_rec_disable
@@ -46,7 +52,9 @@ class Trade
 	end
 
 	def check_latency()
-		$latency = Utils.binance_latency(num: 1)
+		# binding.pry
+		$u = Utils.new
+		$latency = $u.binance_latency(num: 1, log_mon: @log_mon, future_rest: @future_rest)
 
 		# workaround to windows PC with bad clock
 		if @trade_realtime_disable then
@@ -82,7 +90,7 @@ class Trade
 
 
 		@rec_trade.record( trade_obj ) if !@trade_rec_disable
-		@trade_expert.process_ticketTrade( trade: trade_obj )
+		@trade_expert.process_ticketTrade( trade: trade_obj ) if !@trade_disable
 
 		if true then
 			message		= " %s -> %s [%3.2fms] : %.2f (%s) - %.6f" %

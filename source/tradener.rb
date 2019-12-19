@@ -4,6 +4,7 @@ require 'eventmachine'
 require 'pry'
 require 'json'
 require 'bigdecimal'
+require 'cli'
 
 # telegram and binance keys
 require_relative 'secret_keys'
@@ -13,6 +14,40 @@ require_relative 'lib/Logger'
 require_relative 'lib/Utils'
 require_relative 'lib/Account'
 require_relative 'lib/Trade'
+
+#---------------------------
+# MAIN
+#---------------------------
+
+# Help
+puts "="*120
+puts "Tradener"
+puts "="*120
+puts "This code can:"
+puts "- record all tickets of all trades from Binance. (TradePersistence.rb)"
+puts "- process tickets and generate signals and patterns. (TradeExpert.rb, Candle.rb, CandlestickPatterns.rb, CandlestickPatternsClassifier.rb)"
+puts "- process signals and patterns with Bots. (CandleBot01.rb)"
+puts "-"*120
+# puts "how its works:"
+# puts "-"*120
+# puts "Instructions:"
+# puts ""
+puts ""
+puts "-"*120
+puts ""
+
+# # Check Command Line Arguments
+# settings = CLI.new do
+# 	description	"Tradener options"
+# 	switch	:debug,		:short => :d,	:required => false,	:description => "Enables debug information"
+# 	switch	:cache,		:short => :c,	:required => false,	:description => "Enables cache"
+# 	option	:r_csv_file,	:short => :r,	:required => false,	:description => "file name of cvs file with list of ReviewRecord items."
+# end.parse! do |settings|
+# 	$debug		= true if !settings.debug.nil?
+# 	$cache_en	= true if !settings.cache.nil?
+# 	$r_csv_file	= settings.r_csv_file if !settings.r_csv_file.nil?
+# end
+
 
 
 # TRADE_REC_DISABLE
@@ -41,9 +76,8 @@ puts "Listener Key = #{$listen_key}"
 
 # Utils.ntp_test()
 
-$td = Trade.new( rec_trade: $rec_trade )
+$td = Trade.new( rec_trade: $rec_trade, future_rest: $future_rest, log_mon: $log_mon )
 $td.check_latency()
-
 $ac = Account.new()
 $ac.update()
 #
@@ -62,8 +96,15 @@ EM.run do
 	# WebSocket (streaming) event handler - user_data stream
 	ud_message = proc { |e|
 		$s_local = Time.now
-		obj = JSON.parse(e.data)
-		if (!obj["e"].nil?) then
+# {'e': 'listenKeyExpired', 'E': 1576763248644}
+		obj = nil
+		begin
+			obj = JSON.parse(e.data)
+		rescue
+
+			$log_mon.error obj.inspect
+		end
+		if (!obj.nil? && !obj["e"].nil?) then
 			$td.orderTradeUpdate(obj)	if obj["e"]=="ORDER_TRADE_UPDATE"
 			$td.accountUpdate(obj)	if obj["e"]=="ACCOUNT_UPDATE"
 		end
@@ -72,8 +113,13 @@ EM.run do
 	# WebSocket (streaming) event handler - multi streams
 	multi_message = proc { |e|
 		$s_local = Time.now
-		obj = JSON.parse(e.data)
-		if (!obj["stream"].nil?) then
+		obj = nil
+		begin
+			obj = JSON.parse(e.data)
+		rescue
+			$log_mon.error obj.inspect
+		end
+		if (!obj.nil? &&!obj["stream"].nil?) then
 			$td.btcusdt_depth5(obj) 		if obj["stream"]=="btcusdt@depth5"
 			$td.new_btcusdt_aggTrade(obj)	if obj["stream"]=="btcusdt@aggTrade"
 		end

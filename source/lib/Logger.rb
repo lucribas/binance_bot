@@ -25,6 +25,7 @@ class Logger
 			@file = File.new(filename,  "w")
 			puts "Created logfile: #{filename}"
 		end
+		telegram_init()
 	end
 
 	def close()
@@ -89,6 +90,42 @@ class Logger
 
 	private :timestamp
 
+
+
+		def sent_telegram( message )
+			Telegram::Bot::Client.run($telegram_token) do |bot|
+				bot.api.send_message( chat_id: 43716964, text: message)
+			end
+		end
+
+
+		def telegram_init()
+			begin
+				$telegram_en = ((!ENV.include?("TELEGRAM_DISABLE")) && (!$telegram_force_disabled) )
+				puts "telegram_en: #{$telegram_en}"
+				sent_telegram( "connected!" ) if $telegram_en
+			rescue StandardError => e
+				puts "Telegram error:"
+				puts "\n\t# to disable Telegram:"
+				puts "\twindows:> $env:TELEGRAM_DISABLE=1"
+				raise e
+			end
+		end
+
+end
+
+
+
+$message_buffer = ""
+
+def send_trade_info( message )
+	$message_buffer = $message_buffer + message + "\n"
+end
+
+def send_trade_info_send
+	$log_trade.info $message_buffer
+	Logger.sent_telegram $message_buffer if $telegram_en
+	$message_buffer = ""
 end
 
 
@@ -131,35 +168,5 @@ def print_trade( trade_obj )
 	else
 		$log_mon.info message.red
 	end
-end
 
-
-
-def sent_telegram( message )
-	Telegram::Bot::Client.run($telegram_token) do |bot|
-		bot.api.send_message( chat_id: 43716964, text: message)
-	end
-end
-
-begin
-	$telegram_en = ((!ENV.include?("TELEGRAM_DISABLE")) && (!$play_trade) )
-	puts "telegram_en: #{$telegram_en}"
-	sent_telegram( "connected!" ) if $telegram_en
-rescue StandardError => e
-	puts "Telegram error:"
-	puts "\n\t# to disable Telegram:"
-	puts "\twindows:> $env:TELEGRAM_DISABLE=1"
-	raise e
-end
-
-$message_buffer = ""
-
-def send_trade_info( message )
-	$message_buffer = $message_buffer + message + "\n"
-end
-
-def send_trade_info_send
-	$log_trade.info $message_buffer
-	sent_telegram $message_buffer if $telegram_en
-	$message_buffer = ""
 end
