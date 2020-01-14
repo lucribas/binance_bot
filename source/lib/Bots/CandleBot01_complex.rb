@@ -1,4 +1,18 @@
 
+# working......
+# working......
+# working......
+# working......
+# working......
+# working......
+# working......
+# working......
+# working......
+# working......
+# working......
+# working......
+
+
 
 class CandleBot01
 
@@ -10,7 +24,6 @@ class CandleBot01
 
 		@cool_down_time_en = false
 		@cool_down_time = 0
-
 
 		@patterns_as_bull = [
 					# pattern, confirm period need, confirm volume need, confirm body need
@@ -50,6 +63,11 @@ class CandleBot01
 		@volume = []
 		@oscilator = []
 		@mma = []
+		@on_charge = :NONE
+
+		@start_bear_price = 0.0
+		@start_bull_price = 0.0
+		@start_trade_time = 0.0
 		@sum_profit = 0.0
 
 	end
@@ -80,12 +98,19 @@ class CandleBot01
 	# verify if have a new pattern
 	# confirm or deny trend
 
-	# ideas
-	# - monitor: mma (fast e slow)
-	# - check candle speed to capture a rali
-	# - checl vol and trend of last candles
-	# - create a new signal for indicate a new trade enter point
+	  # observar mma (fast e slow)
+	  # analise de candle nao tem velocidade para capturar um rali
+	  # observar o volume e os ultimos candles e tendenncias
+	  # fazer um indicador de entrada..
+
+
+	# se eu analisar o candle
+	# se eu confirmar ele com 1pip em ate 10 segundos
+	# entrar executar operação
+
+
 		c1	= candle[position]
+
 
 		#--- DOWN SMA
 		if c1[:trend] == :BEAR then
@@ -143,26 +168,26 @@ class CandleBot01
 		return if position <= 10
 		c1 = candle[position]
 
-		if @r.on_charge_bear then
-			profit = @r.start_bear_price - c1[:close]
-		elsif @r.on_charge_bull then
-			profit = c1[:close] - @r.start_bull_price
+		if @on_charge_bear then
+			profit = @start_bear_price - c1[:close]
+		elsif @on_charge_bull then
+			profit = c1[:close] - @start_bull_price
 		else
 			profit = 0.0
 		end
 
-		hister			= (c1[:time_close] - @r.start_trade_time)
-		stp_loss		= ( (hister > 2.0*1000) && (profit < -5.0) && (@r.on_charge_notnone) )
+		hister			= (c1[:time_close] - @start_trade_time)
+		stp_loss		= ( (hister > 2.0*1000) && (profit < -5.0) && (@on_charge_notnone) )
 		rule_msg = "fstp"
 		msg = "fast STOP_LOSS"
 
-		if (@r.on_charge_bear && stp_loss) then
+		if (@on_charge_bear && stp_loss) then
 			# binding.pry if (( "%.2f" % profit ) == "-4.54" )
-			@r.trade_close_bear( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], start_bear_price: @r.start_bear_price, profit: profit, msg: msg )
+			@r.trade_close_bear( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 		end
 
-		if (@r.on_charge_bull && stp_loss) then
-			@r.trade_close_bull( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], start_bull_price: @r.start_bull_price, profit: profit, msg: msg )
+		if (@on_charge_bull && stp_loss) then
+			@r.trade_close_bull( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], profit: profit, msg: msg )
 		end
 	end
 
@@ -181,28 +206,34 @@ class CandleBot01
 
 		# forecast, trend, reversion only available in c2
 		return if position <= 10
-		# point for previous candles
 		c1 = candle[position]
 		c2 = candle[position-1]
 		c3 = candle[position-2]
 		c4 = candle[position-3]
 
-		if @r.on_charge_bear then
-			profit = @r.start_bear_price - c1[:close]
-		elsif @r.on_charge_bull then
-			profit = c1[:close] - @r.start_bull_price
+
+		@on_charge_bull = (@on_charge == :BULL)
+		@on_charge_bear = (@on_charge == :BEAR)
+		@on_charge_none = (@on_charge == :NONE)
+		@on_charge_notnone = (!@on_charge_none)
+		@on_charge_notbear = (!@on_charge_bear)
+		@on_charge_notbull = (!@on_charge_bull)
+
+		if @on_charge_bear then
+			profit = @start_bear_price - c1[:close]
+		elsif @on_charge_bull then
+			profit = c1[:close] - @start_bull_price
 		else
 			profit = 0.0
 		end
 
 		#--------------------------------------------------------------------------------------------
-		# c3
+		# slow
 		c3_mkt_bull		= (c3[:market_chk] == :BULL)
 		c3_mkt_bear		= (c3[:market_chk] == :BEAR)
 		c3_trend_bull	= (c3[:trend] == :BULL)
 		c3_trend_bear	= (c3[:trend] == :BEAR)
-		#--------------------------------------------------------------------------------------------
-		# c2
+
 		c2_mkt_bull		= (c2[:market_chk] == :BULL)
 		c2_mkt_bear		= (c2[:market_chk] == :BEAR)
 		c2_fore_bull	= (c2[:forecast] == :BULL)
@@ -211,37 +242,30 @@ class CandleBot01
 		c2_rev_bear	= (c2[:reversion] == :BEAR)
 		c2_trend_bull	= (c2[:trend] == :BULL)
 		c2_trend_bear	= (c2[:trend] == :BEAR)
-		#--------------------------------------------------------------------------------------------
-		# c1
+		# fast
 		c1_mkt_bull		= (c1[:market_chk] == :BULL)
 		c1_mkt_bear		= (c1[:market_chk] == :BEAR)
 
 
-		# some indicators
-		# Hi and Low of candle
+		# new indicators
 		hilo1 = (c1[:high]-c1[:low]).abs
 		hilo2 = (c2[:high]-c2[:low]).abs
 		hilo3 = (c3[:high]-c3[:low]).abs
 		hilo4 = (c4[:high]-c4[:low]).abs
-
-		# adjust factor (based in current time of candle)
 		pos_adj = (c1[:time_close] % @param[:CANDLE_PERIOD]).to_f
 		vol_adj = ((pos_adj>0) ? (@param[:CANDLE_PERIOD] / pos_adj) : 1)
-		vol_adj = [vol_adj, @param[:CANDLE_PERIOD]/1000 ].min
 
-		# time histeresis point
-		hister			= (c1[:time_close] - @r.start_trade_time)
+		hister			= (c1[:time_close] - @start_trade_time)
+		stp_gain_min	= ( (hister > @param[:CHK_GAIN_HISTERESIS]) && (profit < @param[:GAIN_MIN]) && (@on_charge_notnone) )
+		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]) && (@on_charge_notnone) )
+		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]) && (@on_charge_notnone) )
 
-		# Stop Loss
-		stp_gain_min	= ( (hister > @param[:CHK_GAIN_HISTERESIS]) && (profit < @param[:GAIN_MIN]) && (@r.on_charge_notnone) )
 		stop_adp		= -(hilo3+hilo2)
-		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < stop_adp) && (@r.on_charge_notnone) )
-		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]) && (@r.on_charge_notnone) )
-		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]) && (@r.on_charge_notnone) )
-		stp_loss		= ( (profit < stop_adp) && (@r.on_charge_notnone) )
-		stp_loss2		= false #( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]/3) && (@r.on_charge_notnone) )
+		stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < stop_adp) && (@on_charge_notnone) )
+		stp_loss		= ( (profit < stop_adp) && (@on_charge_notnone) )
+		stp_loss2		= false #( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]/3) && (@on_charge_notnone) )
 
-		# value of Volume Thresholds
+
 		vol_th_fore_vl	= [ @param[:VOL_THRESHOLD_FORECAST]*c1[:avg_trade_qty], @param[:VOL_THRESHOLD_FORECAST]*@param[:VOL_SIZE]].min
 		vol_th_rev_vl	= [ @param[:VOL_THRESHOLD_REVERSION]*c1[:avg_trade_qty], @param[:VOL_THRESHOLD_REVERSION]*@param[:VOL_SIZE]].min
 		vol_th_fore_vl	= [ @param[:VOL_THRESHOLD_FORECAST]*c1[:avg_trade_qty], @param[:VOL_THRESHOLD_FORECAST]*@param[:VOL_SIZE]].min
@@ -258,23 +282,23 @@ class CandleBot01
 
 
 	     # o vol nao consegue pegar os ganhos
-		 vol_th_flg = c3[:avg_trade_qty]<c2[:avg_trade_qty]
-		 bull_ind = c2[:low]<c1[:low] || c2[:high]<c1[:high]
-		 bear_ind = c2[:low]>c1[:low] || c2[:high]>c1[:high]
+		 vol_th_flg = true #c3[:avg_trade_qty]<c2[:avg_trade_qty]
+		 bull_ind = true #c2[:low]<c1[:low] || c2[:high]<c1[:high]
+		 bear_ind = true #c2[:low]>c1[:low] || c2[:high]>c1[:high]
 		 hilo_ind = (hilo3<hilo2)
 
-		 vol_th_flg_fore =  ( (c3[:trade_qty]<c2[:trade_qty]) && (c2[:trade_qty]<vol_adj*c1[:trade_qty]) ) && (hilo2>1.0)
-		 vol_th_flg_rev =   ( (c3[:trade_qty]<c2[:trade_qty]) && (c2[:trade_qty]<vol_adj*c1[:trade_qty]) ) && (hilo2>1.0)
+		 vol_th_flg_fore =  ( (c3[:trade_qty]<c2[:trade_qty]) && (c2[:trade_qty]<vol_adj*c1[:trade_qty]) ) && (hilo2>5.0)
+		 vol_th_flg_rev =  ( (c3[:trade_qty]<c2[:trade_qty]) && (c2[:trade_qty]<vol_adj*c1[:trade_qty]) ) && (hilo2>20.0)
 
-		c2_fore_bull_n	= c2_fore_bull && (c2[:sum_bull] >= @param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bear])
-		c2_fore_bear_n	= c2_fore_bear && (c2[:sum_bear] >= @param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bull])
-		c2_rev_bull_n	=  c2_rev_bull && (c2[:sum_bull] >= @param[:SUM_THRESHOLD_REVERSION]*c2[:sum_bear])
-		c2_rev_bear_n	=  c2_rev_bear && (c2[:sum_bear] >= @param[:SUM_THRESHOLD_REVERSION]*c2[:sum_bull])
+		c2_fore_bull_n	= c2_fore_bull #&& (c2[:sum_bull] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bear])
+		c2_fore_bear_n	= c2_fore_bear #&& (c2[:sum_bear] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bull])
+		c2_rev_bull_n	= c2_rev_bull #&& (c2[:sum_bull] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_REVERSION]*c2[:sum_bear])
+		c2_rev_bear_n	= c2_rev_bear #&& (c2[:sum_bear] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_REVERSION]*c2[:sum_bull])
 
-		c1_fore_bull_n	= (c1[:sum_bull] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear])
-		c1_fore_bear_n	= (c1[:sum_bear] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull])
-		c1_rev_bull_n	= (c1[:sum_bull] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bear])
-		c1_rev_bear_n	= (c1[:sum_bear] >= @param[:SUM_THRESHOLD_DR]*@param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bull])
+		c1_fore_bull_n	= (c1[:sum_bull] >= @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear])
+		c1_fore_bear_n	= (c1[:sum_bear] >= @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull])
+		c1_rev_bull_n	= (c1[:sum_bull] >= @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bear])
+		c1_rev_bear_n	= (c1[:sum_bear] >= @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bull])
 
 
 		c1_thr_fore_bull	= ((c1_fore_bull_n && c2_fore_bull_n) && vol_th_flg_fore  && bull_ind)
@@ -282,22 +306,21 @@ class CandleBot01
 		c1_thr_rev_bull		= ((c1_rev_bull_n  && c2_rev_bull_n)  && vol_th_flg_rev   && bull_ind)
 		c1_thr_rev_bear		= ((c1_rev_bear_n  && c2_rev_bear_n)  && vol_th_flg_rev   && bear_ind)
 
+		# @log_mon.info  "hister = #{c1[:time_close]} - #{@start_trade_time}"
+		# @log_mon.info  "hister = #{hister}, stp_gain_min=#{stp_gain_min}, stp_loss=#{stp_loss}"
+		# @log_mon.info  "c123 = [#{c1[:market_chk]}, #{c2[:market_chk]}, #{c3[:market_chk]}]"
 
-		# 01 => FORECAST
-		# only use the forecast of c2 candle confirmed in c1 threshold
-		rule_bull_01 = ( c2_fore_bull && c1_thr_fore_bull )
-		rule_bear_01 = ( c2_fore_bear && c1_thr_fore_bear )
-
-		# 02 => MKT x3
-		rule_bull_02 = ( c3_mkt_bull && c2_mkt_bull && c1_mkt_bull && c1_thr_fore_bull)
-		rule_bear_02 = ( c3_mkt_bear && c2_mkt_bear && c1_mkt_bear && c1_thr_fore_bear)
-
-
-		# 03 => FIGURE REVERSION
 		rule_bull_03 = ( c2_rev_bull && c1_mkt_bull && c1_thr_rev_bull )
 		rule_bear_03 = ( c2_rev_bear && c1_mkt_bear && c1_thr_rev_bear )
 
-		# 04 => TREND
+		# rule_bull_02 = ( c3_mkt_bull && c2_mkt_bull && c1_mkt_bull && c1_thr_fore_bull)
+		# rule_bear_02 = ( c3_mkt_bear && c2_mkt_bear && c1_mkt_bear && c1_thr_fore_bear)
+		rule_bull_02 = ( c2_mkt_bull && c1_mkt_bull && c1_thr_fore_bull)
+		rule_bear_02 = ( c2_mkt_bear && c1_mkt_bear && c1_thr_fore_bear)
+
+		rule_bull_01 = ( c2_fore_bull && c1_thr_fore_bull )
+		rule_bear_01 = ( c2_fore_bear && c1_thr_fore_bear )
+
 		# melhorar o deteccao de trend - muitos falsos
 		# rule_bull_04 = ( c2_trend_bull && c1_mkt_bull && c1_thr_fore_bull )
 		# rule_bear_04 = ( c2_trend_bear && c1_mkt_bear && c1_thr_fore_bear )
@@ -305,84 +328,81 @@ class CandleBot01
 		rule_bull_04 = ( c3_trend_bull && c2_trend_bull && c1_mkt_bull && c1_thr_fore_bull )
 		rule_bear_04 = ( c3_trend_bear && c2_trend_bear && c1_mkt_bear && c1_thr_fore_bear )
 
-
-		# 05 => STOP_GAIN
-		rule_bull_05 = ( stp_gain_min && c1_thr_fore_bull )
-		rule_bear_05 = (stp_gain_min && c1_thr_fore_bear )
-
-		# 06 => STOP_LOSS
+		rule_bull_05 = false#( stp_gain_min && c1_thr_fore_bull )
+		rule_bear_05 = false#( stp_gain_min && c1_thr_fore_bear )
 		rule_bull_06 = (stp_loss || ( stp_loss2 && c2_mkt_bull) || c1_thr_fore_bull )
 		rule_bear_06 = (stp_loss || ( stp_loss2 && c2_mkt_bear) || c1_thr_fore_bear )
 
+		rule_bull_start	= ( rule_bull_01 || rule_bull_02 || rule_bull_03 || rule_bull_04 )
+		rule_bear_start	= ( rule_bear_01 || rule_bear_02 || rule_bear_03 || rule_bear_04 )
+		#rule_bull_start	= ( rule_bull_01 || rule_bull_02 )
+		#rule_bear_start	= ( rule_bear_01 || rule_bear_02 )
 
-		# VOL Increaded detection
-		vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) && ( c2[:trade_qty] < (1.2*vol_adj*c1[:trade_qty]) ) && (1.5*hilo3 < hilo2) && (2.0 < hilo2) && (3.0 < hilo2) && (1.0 < hilo1))
+		# nao usa mais o trend para entrar
+		# rule_bull_start	= ( ( (!c1[:flags_bull][0]) && rule_bull_01 ) || ( (!c1[:flags_bull][1]) && rule_bull_02 ) )
+		# rule_bear_start	= ( ( (!c1[:flags_bear][0]) && rule_bear_01 ) || ( (!c1[:flags_bear][1]) && rule_bear_02 ) )
+		# nao usa o trend para fechar
+
+		rule_bear_close		= (rule_bull_03 || rule_bull_05 || rule_bull_06)
+		rule_bull_close		= (rule_bear_03 || rule_bear_05 || rule_bear_06)
+
+	#	rule_bear_close	= ( rule_bull_01 || rule_bull_02 || rule_bull_03 || rule_bull_04 )
+	#	rule_bull_close	= ( rule_bear_01 || rule_bear_02 || rule_bear_03 || rule_bear_04 )
+
+
+		# c1[:flags_bear] = [(rule_bear_01 || c1[:flags_bear][0]), (rule_bear_02 || c1[:flags_bear][1])]
+		# c1[:flags_bull] = [(rule_bull_01 || c1[:flags_bull][0]), (rule_bull_02 || c1[:flags_bear][1])]
+
+
+		vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) && ( c2[:trade_qty] < (1.2*vol_adj*c1[:trade_qty]) ) && (hilo3 < hilo2) && (2.0 < hilo2) && (3.0 < hilo2) && (1.0 < hilo1))
+
 		#vol_increased = ( ( c4[:trade_qty] < c3[:trade_qty] ) && ( c3[:trade_qty] < c2[:trade_qty] ) && ( c2[:trade_qty] < (vol_adj*c1[:trade_qty]) ) )
 		#vol_increased = ( c3[:trade_qty] < c2[:trade_qty] )
-		#vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) )
+		# vol_increased = ( ( c3[:trade_qty] < c2[:trade_qty] ) )
 
-
-		# FINAL RULES to trade
-		rule_bull_start		= ( rule_bull_01 || rule_bull_02 || rule_bull_03 || rule_bull_04 ) && vol_increased
-		rule_bear_start		= ( rule_bear_01 || rule_bear_02 || rule_bear_03 || rule_bear_04 ) && vol_increased
-		rule_bear_close		= ( rule_bull_03 || rule_bull_05 || rule_bull_06 )
-		rule_bull_close		= ( rule_bear_03 || rule_bear_05 || rule_bear_06 )
-
-		# Cooldown stop - FORCE a pause to start a new trade
 		cooldown_stp = ((@cool_down_time_en == true) && (c1[:time_close] < (@cool_down_time + @param[:COOL_DOWN_TMP])))
 		# @cooldown_stp_l = @cooldown_stp_c
 		# @cooldown_stp_c = cooldown_stp
 		# binding.pry if (@cooldown_stp_l==true) && (@cooldown_stp_c==false)
 
 
-
-
-
-
-		#-----------------
-		# Trend messages
-		if @log_mon.log_en? then
-			if (c2_fore_bull && @r.on_charge_notbull) then
-				@log_mon.info "waiting to confirm forecast to BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear] ]
-			end
-			if (c2_rev_bull && @r.on_charge_notbull) then
-				@log_mon.info "waiting to confirm reversion to BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bear] ]
-			end
-
-			if c2_fore_bear && (@r.on_charge_notbear) then
-				# binding.pry if (c1[:sum_bear] > 203)
-				@log_mon.info "waiting to confirm forecast to BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull] ]
-			end
-			if c2_rev_bear && (@r.on_charge_notbear) then
-				@log_mon.info "waiting to confirm reversion to BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bull] ]
-			end
-		end
-
-
-		# binding.pry if (c1[:time_close] >= 1575434070924) && ( c1[:sum_bear]>32.0 )
-
 		# ----------------
 		# BULL DETECTED
 
-		trade_start_bull_ind = ( (@r.on_charge_notbull && rule_bull_start) && (!cooldown_stp) )
-		trade_close_bear_ind = (     @r.on_charge_bear && rule_bear_close)
+		trade_close_bear_ind = (@on_charge_bear && rule_bear_close)
+		trade_start_bull_ind = ( (@on_charge_notbull && rule_bull_start && vol_increased) && (!cooldown_stp) )
 
+		if @log_mon.log_en? then
+			if (c2_fore_bull && @on_charge_notbull) then
+				@log_mon.info "waiting to confirm forecast BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_fore_vl, @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bear] ]
+			end
+			if (c2_rev_bull && @on_charge_notbull) then
+				@log_mon.info "waiting to confirm reversion BULL: %.2f (sum_bull) > %.2f (avg_vol),  > %.2f (bear_thresh)" % [ c1[:sum_bull], vol_th_rev_vl, @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bear] ]
+			end
+
+			if c2_fore_bear && (@on_charge_notbear) then
+				# binding.pry if (c1[:sum_bear] > 203)
+				@log_mon.info "waiting to confirm forecast BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_fore_vl, @param[:SUM_THRESHOLD_FORECAST]*c1[:sum_bull] ]
+			end
+			if c2_rev_bear && (@on_charge_notbear) then
+				@log_mon.info "waiting to confirm reversion BEAR: %.2f (sum_bear) > %.2f (avg_vol),  > %.2f (bull_thresh)" % [ c1[:sum_bear], vol_th_rev_vl, @param[:SUM_THRESHOLD_REVERSION]*c1[:sum_bull] ]
+			end
+		end
 		# fast close trade if Change trend
 		if (trade_close_bear_ind || trade_start_bull_ind) then
 				rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
 				rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
 				if @log_mon.log_en? then
-					rule_msg = @r.on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
+					rule_msg = @on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
 					@log_mon.info rule_msg
 				end
 				# binding.pry
-				msg = ""
-				msg += "rule_bull_01: FORECAST\n" if rule_bull_01
-				msg += "rule_bull_02: MKT x3\n" if rule_bull_02
-				msg += "rule_bull_03: FIGURE REVERSION\n" if rule_bull_03
-				msg += "rule_bull_04: TREND\n" if rule_bull_04
-				msg += "rule_bull_05: STOP_GAIN\n" if rule_bull_05
-				msg += "rule_bull_06: STOP_LOSS\n" if rule_bull_06
+				msg = "rule_bull_01: FORECAST " if rule_bull_01
+				msg = "rule_bull_02: MKT x3 " if rule_bull_02
+				msg = "rule_bull_03: FIGURE REVERSION " if rule_bull_03
+				msg = "rule_bull_04: TREND " if rule_bull_04
+				msg = "rule_bull_05: STOP_GAIN " if rule_bull_05
+				msg = "rule_bull_06: STOP_LOSS " if rule_bull_06
 				msg = " %s (%s)-%s:" % [msg, rule_bull_msg, rule_bear_msg]
 		end
 
@@ -391,7 +411,7 @@ class CandleBot01
 		if trade_close_bear_ind then
 			# binding.pry if (( "%.2f" % profit ) == "-4.54" )
 			rule_bear_close_msg = [rule_bull_03, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
-			@r.trade_close_bear( close_rule: rule_bear_close_msg, time: c1[:time_close], price: c1[:close], start_bear_price: @r.start_bear_price, profit: profit, msg: msg )
+			@r.trade_close_bear( close_rule: rule_bear_close_msg, time: c1[:time_close], price: c1[:close], start_bear_price: @start_bear_price, profit: profit, msg: msg )
 			# binding.pry if rule_bear_close_msg == "000"
 
 			# cool down after close
@@ -412,8 +432,9 @@ class CandleBot01
 		# ----------------
 		# BEAR DETECTED
 
-		trade_start_bear_en = ( ( @r.on_charge_notbear && rule_bear_start) && (!cooldown_stp) )
-		trade_close_bull_en = (      @r.on_charge_bull && rule_bull_close)
+		trade_close_bull_en = (@on_charge_bull && rule_bull_close)
+
+		trade_start_bear_en = ((@on_charge_notbear && rule_bear_start && vol_increased) && (!cooldown_stp) )
 
 		# fast close trade if Change trend
 		if ( trade_close_bull_en || trade_start_bear_en ) then
@@ -421,23 +442,23 @@ class CandleBot01
 				rule_bear_msg = [rule_bear_01, rule_bear_02, rule_bear_03, rule_bear_04, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
 				rule_bull_msg = [rule_bull_01, rule_bull_02, rule_bull_03, rule_bull_04, rule_bull_05, rule_bull_06].map { |v| v ? 1 : 0 }.join
 				if @log_mon.log_en? then
-					rule_msg = @r.on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
+					rule_msg = @on_charge.to_s + " : bull-bear " + rule_bull_msg + "-" + rule_bear_msg# + " flags=" + c1[:flags_bull].join(",") + "-" + c1[:flags_bear].join(",")
 					@log_mon.info rule_msg
 				end
-				msg = ""
-				msg += "rule_bear_01: FORECAST\n" if rule_bear_01
-				msg += "rule_bear_02: MKT x3\n" if rule_bear_02
-				msg += "rule_bear_03: FIGURE REVERSION\n" if rule_bear_03
-				msg += "rule_bear_04: TREND\n" if rule_bear_04
-				msg += "rule_bear_05: STOP_GAIN\n" if rule_bear_05
-				msg += "rule_bear_06: STOP_LOSS\n" if rule_bear_06
+
+				msg = "rule_bear_01: FORECAST " if rule_bear_01
+				msg = "rule_bear_02: MKT x3 " if rule_bear_02
+				msg = "rule_bear_03: FIGURE REVERSION " if rule_bear_03
+				msg = "rule_bear_04: TREND " if rule_bear_04
+				msg = "rule_bear_05: STOP_GAIN " if rule_bear_05
+				msg = "rule_bear_06: STOP_LOSS " if rule_bear_06
 				msg = " %s %s-(%s):" % [msg, rule_bull_msg, rule_bear_msg]
 				# reversion confirmed
 		end
 
 		if trade_close_bull_en then
 			rule_bull_close_msg = [rule_bear_03, rule_bear_05, rule_bear_06].map { |v| v ? 1 : 0 }.join
-			@r.trade_close_bull( close_rule: rule_bull_close_msg, time: c1[:time_close], price: c1[:close], start_bull_price: @r.start_bull_price, profit: profit, msg: msg )
+			@r.trade_close_bull( close_rule: rule_bull_close_msg, time: c1[:time_close], price: c1[:close], start_bull_price: @start_bull_price, profit: profit, msg: msg )
 
 			# cool down after close
 			trade_start_bear_en = false
@@ -448,10 +469,14 @@ class CandleBot01
 			rule_bear_start_msg	= [ rule_bear_01, rule_bear_02 ].map { |v| v ? 1 : 0 }.join
 			@r.trade_start_bear( start_rule: rule_bear_start_msg, time: c1[:time_close], price: c1[:close], msg: msg )
 			@cool_down_time_en = false
-			# binding.pry
 			return
 		end
 
+
+	# se o volume for maior que 1
+	# sum_bull = sum trades > open
+	# sum_bear = sum trades < open
+	# se > 70% na tendencia entao confirma tendencia
 
 	end
 end

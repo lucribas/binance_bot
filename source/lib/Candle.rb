@@ -34,6 +34,7 @@ class Candle
 		#como tratar qndo nao tem trade
 
 		#inside candle
+		# binding.pry
 		if trade_time < (@position_time + @param[:CANDLE_PERIOD]) && @position_time != 0 then
 			c1[:low]		= trade_price if trade_price < c1[:low]
 			c1[:high] 		= trade_price if trade_price > c1[:high]
@@ -52,7 +53,7 @@ class Candle
 
 
 			#check
-			#c1[:market_chk]	= (c1[:bodysize] > 0.7*vol_adj*c1[:avg_bodysize]) ? c1[:market] : :NONE
+			c1[:market_chk]	= (c1[:bodysize] > 0.7*vol_adj*c1[:avg_bodysize]) ? c1[:market] : :NONE
 
 			#check_stop(candle: @candle, position: @position)
 
@@ -70,7 +71,7 @@ class Candle
 				@signals.each { |s| s.process_closed_candle(candle: @candle, position: @position) }
 				@bots.each { |b| b.process_closed_candle(candle: @candle, position: @position) }
 
-				@log_mon.info  "candle[#{@position}]:  %s" % @candle[@position].inspect if @log_mon.log_en?
+				@log_mon.trade  "candle[#{@position}]:  %s" % @candle[@position].inspect if @log_mon.log_en?
 			end
 
 			# previous reversion

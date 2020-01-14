@@ -42,11 +42,15 @@ $telegram_force_disabled = true
 settings = CLI.new do
 	description	"Tradener options"
 	switch	:debug,		:short => :d,	:required => false,	:description => "Enables debug information"
+	switch	:logger,	:short => :l,	:required => false,	:description => "Enables logger to file"
+	switch	:sdtout,	:short => :s,	:required => false,	:description => "Enables output to screen"
 	switch	:profiler,	:short => :p,	:required => false,	:description => "Enables profiler"
 	switch	:telegram,	:short => :t,	:required => false,	:description => "Enables Telegram"
-	option	:rec,		:short => :r,	:required => true,	:description => "file name (#{REG_EXTENSION}) of record file with trades."
+	option	:rec,		:short => :r,	:required => true,	:description => "Read the file name (#{REG_EXTENSION}) of record file with trades."
 end.parse! do |settings|
 	$debug						= true if !settings.debug.nil?
+	$logger_en					= true if !settings.logger.nil?
+	$sdtout_en					= true if !settings.sdtout.nil?
 	$profiler_en				= true if !settings.profiler.nil?
 	$telegram_force_disabled	= false if !settings.telegram.nil?
 	$play_file_name				= settings.rec if !settings.rec.nil?
@@ -57,9 +61,8 @@ def log_init()
 	# Logger
 	# current timestamp
 	$timestamp = Time.new.strftime("%Y%m%d_%H%M%S")
-	# $log_mon = Logger.new( filename: LOG_MON_PREFIX + $timestamp + LOG_EXTENSION, fileout_en: true, stdout_en: false)
-	$log_mon = Logger.new( filename: LOG_MON_PREFIX + $timestamp + LOG_EXTENSION, fileout_en: false, stdout_en: false)
-	$log_trade = Logger.new( filename: LOG_TRADE_PREFIX + $timestamp + LOG_EXTENSION, fileout_en: true, stdout_en: false)
+	$log_mon = Logger.new( filename: LOG_MON_PREFIX + $timestamp + LOG_EXTENSION, fileout_en: $logger_en, stdout_en: $sdtout_en)
+	$log_trade = Logger.new( filename: LOG_TRADE_PREFIX + $timestamp + LOG_EXTENSION, fileout_en: $logger_en, stdout_en: $sdtout_en)
 
 	$td = Trade.new( log_mon: $log_mon, future_rest: nil )
 	$ac = Account.new()

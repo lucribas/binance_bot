@@ -37,7 +37,7 @@ ruby tradener.rb
 ======================================================================
 # 2. TRADE PLAY - Backlog tester
 ## 2.1 Linux
-How execure the backlog tester using a dump of recorded trades:
+How execute the backlog tester using a dump of recorded trades:
 
 ```shell
 export TRADE_REALTIME_DISABLE=1

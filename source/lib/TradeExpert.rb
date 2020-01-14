@@ -24,11 +24,14 @@ class TradeExpert
 		@bots[1] = CandleBot01.new( param: @bot_param_1.param, log_mon: @log_mon )
 		@bots.each { |k,b| b.add_router( router: @router ) }
 
+		# NEED FIX ROUTER to allow more than one boot:
+		# move profit, trade vols, etc to anoter obj for each bot
+
 		# -------
 		# Candles
 		@candles = {}
 		# candles - 20s 1m 5m 15m
-		@candles[:t20s]	= Candle.new( param: { CANDLE_PERIOD: 20 }, log_mon: @log_mon)
+		@candles[:t20s]	= Candle.new( param: { CANDLE_PERIOD: @bot_param_1.param[:CANDLE_PERIOD] }, log_mon: @log_mon)
 		# @candles[:t1m]	= Candle.new( period: 60 )
 		# @candles[:t5m]	= Candle.new( period: 5*60 )
 		# @candles[:t15m]	= Candle.new( period: 15*60 )

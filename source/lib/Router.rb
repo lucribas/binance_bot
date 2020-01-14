@@ -7,42 +7,73 @@ require 'binance'
 require 'pry'
 require 'json'
 
-$log_trades_num  = 0
-$sum_profit_pos = 0.0
-$sum_profit_neg = 0.0
-$sum_profit = 0
-
-
-$sum_profit_pos_matrix = {}
-$sum_profit_neg_matrix = {}
 
 class Router
 
+	attr_reader :sum_profit
+	attr_reader :on_charge
+	attr_reader :on_charge_bull
+	attr_reader :on_charge_bear
+	attr_reader :on_charge_none
+	attr_reader :on_charge_notnone
+	attr_reader :on_charge_notbear
+	attr_reader :on_charge_notbull
+	attr_reader :start_trade_time
+	attr_reader :start_bear_price
+	attr_reader :start_bull_price
+
+	SEPARATOR = "-"*40
+
+	def initialize()
+		@log_trades_num  = 0
+		@sum_profit_pos = 0.0
+		@sum_profit_neg = 0.0
+		@sum_profit = 0
+		@sum_profit_pos_matrix = {}
+		@sum_profit_neg_matrix = {}
+		@start_bear_price = 0.0
+		@start_bull_price = 0.0
+		@start_trade_time = 0.0
+		update( state: :NONE )
+	end
+
+
+	def update( state: :NONE )
+		@on_charge	= state
+		# check the current hand
+		@on_charge_bull = (@on_charge == :BULL)
+		@on_charge_bear = (@on_charge == :BEAR)
+		@on_charge_none = (@on_charge == :NONE)
+		@on_charge_notnone = (!@on_charge_none)
+		@on_charge_notbear = (!@on_charge_bear)
+		@on_charge_notbull = (!@on_charge_bull)
+	end
+
 
 	def update_profit( profit:, start_rule:, close_rule: )
-		$log_trades_num = $log_trades_num + 1
-		$sum_profit = $sum_profit + profit
+		@log_trades_num = @log_trades_num + 1
+		@sum_profit = @sum_profit + profit
 
-		$sum_profit_pos_matrix[ start_rule ] = {} if $sum_profit_pos_matrix[ start_rule ].nil?
-		$sum_profit_pos_matrix[ start_rule ][ close_rule ] = 0 if $sum_profit_pos_matrix[ start_rule ][ close_rule ].nil?
+		@sum_profit_pos_matrix[ start_rule ] = {} if @sum_profit_pos_matrix[ start_rule ].nil?
+		@sum_profit_pos_matrix[ start_rule ][ close_rule ] = 0 if @sum_profit_pos_matrix[ start_rule ][ close_rule ].nil?
 		profit_pos = ( (profit>0) ? profit : 0.0 )
-		$sum_profit_pos = $sum_profit_pos + profit_pos
-		$sum_profit_pos_matrix[ start_rule ][ close_rule ] = $sum_profit_pos_matrix[ start_rule ][ close_rule ] + profit_pos
+		@sum_profit_pos = @sum_profit_pos + profit_pos
+		@sum_profit_pos_matrix[ start_rule ][ close_rule ] = @sum_profit_pos_matrix[ start_rule ][ close_rule ] + profit_pos
 
-		$sum_profit_neg_matrix[ start_rule ] = {} if $sum_profit_neg_matrix[ start_rule ].nil?
-		$sum_profit_neg_matrix[ start_rule ][ close_rule ] = 0 if $sum_profit_neg_matrix[ start_rule ][ close_rule ].nil?
+		@sum_profit_neg_matrix[ start_rule ] = {} if @sum_profit_neg_matrix[ start_rule ].nil?
+		@sum_profit_neg_matrix[ start_rule ][ close_rule ] = 0 if @sum_profit_neg_matrix[ start_rule ][ close_rule ].nil?
 		profit_neg = ( (profit<0) ? profit : 0.0 )
-		$sum_profit_neg = $sum_profit_neg + profit_neg
-		$sum_profit_neg_matrix[ start_rule ][ close_rule ] = $sum_profit_neg_matrix[ start_rule ][ close_rule ] + profit_neg
+		@sum_profit_neg = @sum_profit_neg + profit_neg
+		@sum_profit_neg_matrix[ start_rule ][ close_rule ] = @sum_profit_neg_matrix[ start_rule ][ close_rule ] + profit_neg
 	end
 
 	def get_profit_sts( profit: 0)
-		return "profit=%8.2f  [%4d, %8.2f, %8.2f]  liq=%8.2f  efic=%8.4f    \tbar = [%s]" % [profit, $log_trades_num, $sum_profit_pos, $sum_profit_neg, $sum_profit, $sum_profit/$log_trades_num, "X"*profit.abs.to_i] if $log_trades_num>0
+		return "profit=%8.2f  [%4d, %8.2f, %8.2f]  liq=%8.2f  efic=%8.4f    \tbar = [%s]" % [profit, @log_trades_num, @sum_profit_pos, @sum_profit_neg, @sum_profit, @sum_profit/@log_trades_num, "X"*profit.abs.to_i] if @log_trades_num>0
 	end
 
 	def get_profit_report()
-		msg = "sum_profit_pos_matrix: %s\n" % $sum_profit_pos_matrix.inspect
-		msg = msg + "sum_profit_neg_matrix: %s\n" % $sum_profit_neg_matrix.inspect
+		msg = "sum_profit_pos_matrix: %s\n" % @sum_profit_pos_matrix.inspect
+		msg = msg + "sum_profit_neg_matrix: %s\n" % @sum_profit_neg_matrix.inspect
 		send_trade_info msg
 		puts msg
 		puts get_profit_sts()
@@ -50,10 +81,10 @@ class Router
 
 
 	def trade_close_bear( close_rule:, time:, start_bear_price:, price:, profit:, msg: )
-		if $on_charge == :BEAR then
-			$start_trade_time = time
-			update_profit( profit: profit, start_rule: $start_bear_rule_sv, close_rule: close_rule)
-			$on_charge = :NONE
+		if @on_charge == :BEAR then
+			@start_trade_time = time
+			update_profit( profit: profit, start_rule: @start_bear_rule_sv, close_rule: close_rule)
+			update( state: :NONE )
 			$log_mon.info "N"*30 if $log_mon.log_en?
 			$log_mon.info msg.yellow if $log_mon.log_en?
 			stime = format_time( time )
@@ -68,15 +99,18 @@ class Router
 			send_trade_info	stime + t_msg
 			send_trade_info t_msg
 			send_trade_info_send()
+		else
+			$log_mon.info "ERROR not valid operation".red if $log_mon.log_en?
+			binding.pry
 		end
 	end
 
 
 	def trade_close_bull( close_rule:, time:, price:, start_bull_price:, profit:, msg: )
-		if $on_charge == :BULL then
-			$start_trade_time = time
-			update_profit( profit: profit, start_rule: $start_bull_rule_sv, close_rule: close_rule)
-			$on_charge = :NONE
+		if @on_charge == :BULL then
+			@start_trade_time = time
+			update_profit( profit: profit, start_rule: @start_bull_rule_sv, close_rule: close_rule)
+			update( state: :NONE )
 			$log_mon.info "N"*30 if $log_mon.log_en?
 			$log_mon.info msg.yellow if $log_mon.log_en?
 			stime = format_time( time )
@@ -92,39 +126,51 @@ class Router
 			send_trade_info	stime + t_msg
 			send_trade_info t_msg
 			send_trade_info_send()
+		else
+			$log_mon.info "ERROR not valid operation".red if $log_mon.log_en?
+			binding.pry
 		end
 	end
 
 	def trade_start_bull( start_rule: ,time:, price:, msg: )
-		if $on_charge == :NONE then
-			$start_bull_rule_sv = start_rule
-			$start_bear_rule_sv = "X"
-			$start_trade_time = time
-			$start_bull_price = price
-			$on_charge = :BULL
+		# binding.pry
+		if @on_charge == :NONE then
+			@start_bull_rule_sv = start_rule
+			@start_bear_rule_sv = "X"
+			@start_trade_time = time
+			@start_bull_price = price
+			update( state: :BULL )
 			$log_mon.info msg.yellow if $log_mon.log_en?
 			stime = format_time( time )
-			send_trade_info SEPAR
+			# send_trade_info SEPARATOR
 			send_trade_info	stime + msg
 			send_trade_info	"START BULL: buy  %.2f" % price
 			send_trade_info_send()
+			# binding.pry
+		else
+			$log_mon.info "ERROR not valid operation".red if $log_mon.log_en?
+			binding.pry
 		end
 	end
 
 
 	def trade_start_bear( start_rule:, time:, price:, msg: )
-		if $on_charge == :NONE then
-			$start_bear_rule_sv = start_rule
-			$start_bull_rule_sv = "X"
-			$start_trade_time = time
-			$start_bear_price = price
-			$on_charge = :BEAR
+		if @on_charge == :NONE then
+			@start_bear_rule_sv = start_rule
+			@start_bull_rule_sv = "X"
+			@start_trade_time = time
+			@start_bear_price = price
+			update( state: :BEAR )
 			$log_mon.info msg.yellow if $log_mon.log_en?
 			stime = format_time( time )
-			send_trade_info SEPAR
+			# send_trade_info SEPARATOR
 			send_trade_info	stime + msg
 			send_trade_info "START BEAR: sell %.2f" % price
 			send_trade_info_send()
+			# binding.pry
+		else
+			$log_mon.info "ERROR not valid operation".red if $log_mon.log_en?
+			binding.pry
 		end
 	end
 

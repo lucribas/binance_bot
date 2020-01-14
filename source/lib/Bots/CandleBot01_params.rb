@@ -1,7 +1,8 @@
 
 
-# a ideia é depois fazer uma classe capaz de gerar instancias de parametros usando ranges
-# depois fazer otimização
+# the ideia to have a pamameter class
+# -  allow running multiple bots each with a param class
+# -  allow a future optimization parameter class
 
 class CandleBot01_params
 	attr_reader :param
@@ -13,29 +14,27 @@ class CandleBot01_params
 
 	def select( set: )
 
-		@param[:CANDLE_PERIOD] = 160.0 * 1000
+		@param[:CANDLE_PERIOD] = 30.0 * 1000
 		@param[:TREND_PERIOD] = 0 * 1000
 
 		@param[:BODY_SIZE] = 2.0
-		@param[:VOL_SIZE] = 20.0
+		@param[:VOL_SIZE] = 10.0
 
 
-		@param[:CHK_VOL_TH] = 0.1
+		@param[:CHK_VOL_TH] = 1.1
 		@param[:CHK_STOP_HISTERESIS] = 0* 1000
-		@param[:STOP_LOSS] = -3.0
+		@param[:STOP_LOSS] = 1.0
 
-		@param[:CHK_GAIN_HISTERESIS] = 20 * 1000
+		@param[:CHK_GAIN_HISTERESIS] = 2 * 1000
 		@param[:GAIN_MIN] = 2.0
 
-		@param[:SUM_THRESHOLD_FORECAST] = 2.6
-		@param[:SUM_THRESHOLD_REVERSION] = 1.6
-		@param[:SUM_THRESHOLD_DR] = 0.7
-
+		# Thresholds for detection of Trend
+		@param[:SUM_THRESHOLD_FORECAST] = 3.6		# Trend forecast confirmed by "sum of bull" x "sum of bear"
+		@param[:SUM_THRESHOLD_REVERSION] = 1.2		# Trend forecast confirmed by "sum of bull" x "sum of bear"
+		@param[:SUM_THRESHOLD_DR] = 0.7				# Derating
 
 		@param[:VOL_THRESHOLD_FORECAST] = 0.5	# 30% of previous
-		@param[:VOL_THRESHOLD_REVERSION] = 2.6	# 30% of previous
-
-		@param[:SEPAR] = "-"*20
+		@param[:VOL_THRESHOLD_REVERSION] = 1.6	# 30% of previous
 
 		@param[:MA_7] 	= 7 * @param[:CANDLE_PERIOD]
 		@param[:MA_25] 	= 25 * @param[:CANDLE_PERIOD]

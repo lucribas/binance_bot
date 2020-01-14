@@ -16,14 +16,14 @@ class Logger
 		@filename_int = filename
 		@stdout_en = stdout_en
 		@fileout_en = fileout_en
-		@log_en = @debug_info || @fileout_en
+		@log_en = @stdout_en || @fileout_en
 		STDOUT.sync = true
 
 		if !filename.nil? && filename != "" then
 			directory_name = File.dirname(filename)
 			Dir.mkdir(directory_name) unless File.exists?(directory_name)
 			@file = File.new(filename,  "w")
-			puts "Created logfile: #{filename}"
+			info "Created logfile: #{filename}"
 		end
 		telegram_init()
 	end
@@ -41,12 +41,12 @@ class Logger
 
 	def set_fileout_en( fileout_en )
 		@fileout_en = fileout_en
-		@log_en = @debug_info || @fileout_en
+		@log_en = @stdout_en || @fileout_en
 	end
 
 	def set_stdout_en( stdout_en )
 		@stdout_en = stdout_en
-		@log_en = @debug_info || @fileout_en
+		@log_en = @stdout_en || @fileout_en
 	end
 
 	def log_en?()
@@ -60,22 +60,30 @@ class Logger
 
 	def none( prefix, message)
 		if (!message.nil? && message != "") then
-			message.each_line { |line|
-				if @stdout_en then
-					$stdout.puts line
-					$stdout.flush
-				end
-				if (@fileout_en && !@file.nil?) then
-					@file.puts line
-					@file.flush
-				end
-			}
+			$stdout.puts message if @stdout_en
+			@file.puts message if (@fileout_en && !@file.nil?)
+			# message.each_line { |line|
+			# 	$stdout.puts line if @stdout_en
+			# 	@file.puts line if (@fileout_en && !@file.nil?)
+			# }
+			$stdout.flush if @stdout_en
+			@file.flush if (@fileout_en && !@file.nil?)
 		end
+	end
+
+	def tradeinfo( message )
+		now = timestamp()
+		none( "|#{now}|INFO:  ", message.colorize(:default).on_cyan)
+	end
+
+	def trade( message )
+		now = timestamp()
+		none( "|#{now}|INFO:  ", message.on_black)
 	end
 
 	def info( message )
 		now = timestamp()
-		none( "|#{now}|INFO:  ", message)
+		none( "|#{now}|INFO:  ", message.colorize(:default).on_magenta)
 	end
 
 	def debug( message )
@@ -85,7 +93,7 @@ class Logger
 
 	def error( message )
 		now = timestamp()
-		none( "|#{now}|ERROR:  ", message)
+		none( "|#{now}|ERROR:  ", message.magenta)
 	end
 
 	private :timestamp
@@ -123,7 +131,8 @@ def send_trade_info( message )
 end
 
 def send_trade_info_send
-	$log_trade.info $message_buffer
+	$log_trade.tradeinfo $message_buffer
+	# puts "-->#{$message_buffer}<--"
 	Logger.sent_telegram $message_buffer if $telegram_en
 	$message_buffer = ""
 end
@@ -164,9 +173,9 @@ def print_trade( trade_obj )
 	f_val = trade_obj[:qty].to_f
 	message = message + " " + "X"*f_val.to_i
 	if bull then
-		$log_mon.info message.cyan
+		$log_mon.trade message.cyan
 	else
-		$log_mon.info message.red
+		$log_mon.trade message.red
 	end
 
 end

@@ -1,0 +1,13 @@
+
+
+source 'https://rubygems.org'
+
+gem 'csv'
+gem 'date'
+gem 'bigdecimal'
+gem 'binance'
+gem 'cli'
+gem 'colorize'
+gem 'json'
+gem 'pry'
+gem 'ruby-prof'
