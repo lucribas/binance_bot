@@ -47,7 +47,7 @@ class Trade
 		sent_telegram( "CLOSE binance!" ) if $telegram_en
 	end
 
-	def on_error()
+	def on_error(e)
 		@log_mon.info e.inspect
 	end
 
