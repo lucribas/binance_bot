@@ -21,6 +21,9 @@ class Router
 	attr_reader :start_trade_time
 	attr_reader :start_bear_price
 	attr_reader :start_bull_price
+	attr_reader :close_bull_price
+	attr_reader :period
+	attr_reader :update_time
 
 	SEPARATOR = "-"*40
 
@@ -34,6 +37,9 @@ class Router
 		@start_bear_price = 0.0
 		@start_bull_price = 0.0
 		@start_trade_time = 0.0
+		@close_trade_time = 0.0
+		@period = 0.0
+		@update_time = 0.0
 		update( state: :NONE )
 	end
 
@@ -82,14 +88,15 @@ class Router
 
 	def trade_close_bear( close_rule:, time:, start_bear_price:, price:, profit:, msg: )
 		if @on_charge == :BEAR then
-			@start_trade_time = time
+			@close_trade_time = time
+			@update_time = time
 			update_profit( profit: profit, start_rule: @start_bear_rule_sv, close_rule: close_rule)
 			update( state: :NONE )
 			$log_mon.info "N"*30 if $log_mon.log_en?
 			$log_mon.info msg.yellow if $log_mon.log_en?
 			stime = format_time( time )
-
-			t_msg = " CLOSE BEAR: buy  (%4.2f->%4.2f)\t\t%s" % [start_bear_price, price, get_profit_sts(profit: profit) ]
+			@period = @close_trade_time - @start_trade_time
+			t_msg = " CLOSE BEAR: buy  (%4.2f->%4.2f) (%4.0fs)\t\t%s" % [start_bear_price, price, @period/1000, get_profit_sts(profit: profit) ]
 			if profit>0 then
 				puts (stime + ":" + t_msg).green #if (profit.abs > 30)
 			else
@@ -108,14 +115,15 @@ class Router
 
 	def trade_close_bull( close_rule:, time:, price:, start_bull_price:, profit:, msg: )
 		if @on_charge == :BULL then
-			@start_trade_time = time
+			@close_trade_time = time
+			@update_time = time
 			update_profit( profit: profit, start_rule: @start_bull_rule_sv, close_rule: close_rule)
 			update( state: :NONE )
 			$log_mon.info "N"*30 if $log_mon.log_en?
 			$log_mon.info msg.yellow if $log_mon.log_en?
 			stime = format_time( time )
-
-			t_msg = " CLOSE BULL: sell (%4.2f->%4.2f)\t\t%s" % [start_bull_price, price, get_profit_sts(profit: profit) ]
+			@period = @close_trade_time - @start_trade_time
+			t_msg = " CLOSE BULL: sell (%4.2f->%4.2f) (%4.0fs)\t\t%s" % [start_bull_price, price, @period/1000, get_profit_sts(profit: profit) ]
 
 			if profit>0 then
 				puts (stime + ":" + t_msg).green #if (profit.abs > 30)
@@ -138,6 +146,7 @@ class Router
 			@start_bull_rule_sv = start_rule
 			@start_bear_rule_sv = "X"
 			@start_trade_time = time
+			@update_time = time
 			@start_bull_price = price
 			update( state: :BULL )
 			$log_mon.info msg.yellow if $log_mon.log_en?
@@ -159,6 +168,7 @@ class Router
 			@start_bear_rule_sv = start_rule
 			@start_bull_rule_sv = "X"
 			@start_trade_time = time
+			@update_time = time
 			@start_bear_price = price
 			update( state: :BEAR )
 			$log_mon.info msg.yellow if $log_mon.log_en?

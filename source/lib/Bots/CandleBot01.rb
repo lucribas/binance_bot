@@ -141,6 +141,9 @@ class CandleBot01
 
 		# forecast, trend, reversion only available in c2
 		return if position <= 10
+
+		return if (@r.on_charge_none)
+
 		c1 = candle[position]
 
 		if @r.on_charge_bear then
@@ -152,7 +155,7 @@ class CandleBot01
 		end
 
 		hister			= (c1[:time_close] - @r.start_trade_time)
-		stp_loss		= ( (hister > 2.0*1000) && (profit < -5.0) && (@r.on_charge_notnone) )
+		stp_loss		= ( (hister > @param[:CHK_FASTSTOP_HISTERESIS]) && (profit < @param[:FASTSTOP_LOSS]) && (@r.on_charge_notnone) )
 		rule_msg = "fstp"
 		msg = "fast STOP_LOSS"
 
