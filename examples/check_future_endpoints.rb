@@ -5,12 +5,11 @@ require 'pry'
 require 'json'
 require 'net/ntp'
 require 'bigdecimal'
-require_relative 'stdoutlog'
-require_relative 'secret_keys'
+require_relative '../source/secret_keys'
 
 # spot_rest  = Binance::Client::REST.new api_key: api_key, secret_key: secret_key
 # spot_ws    = Binance::Client::WebSocket.new
-future_rest  = Binance::Client::REST_FUTURE.new api_key: api_key, secret_key: secret_key
+future_rest  = Binance::Client::REST_FUTURE.new api_key: $api_key, secret_key: $secret_key
 future_ws    = Binance::Client::WebSocketFuture.new
 
 # puts "-"*40

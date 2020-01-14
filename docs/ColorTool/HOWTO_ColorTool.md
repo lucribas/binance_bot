@@ -1,3 +1,4 @@
+ColorTool is for better experience in windows terminal
 
 # Purpose
 To a better experince in windows powershell terminal use the ColorTool to change you color scheme.
