@@ -68,11 +68,15 @@ $log_trade = Logger.new( filename: LOG_TRADE_PREFIX + $timestamp + LOG_EXTENSION
 # Persistence
 $rec_trade = RecordTrade.new( REC_TRADE_PREFIX + $timestamp + REG_EXTENSION )
 
-# Binance connection
-$future_rest  = Binance::Client::REST_FUTURE.new api_key: $api_key, secret_key: $secret_key
-$future_ws    = Binance::Client::WebSocketFuture.new
-$listen_key = $future_rest.listenKey["listenKey"]
-puts "Listener Key = #{$listen_key}"
+def open_binance()
+	# Binance connection
+	$future_rest  = Binance::Client::REST_FUTURE.new api_key: $api_key, secret_key: $secret_key
+	$future_ws    = Binance::Client::WebSocketFuture.new
+	$listen_key = $future_rest.listenKey["listenKey"]
+	puts "Listener Key = #{$listen_key}"
+end
+
+open_binance()
 
 # Utils.ntp_test()
 
@@ -101,8 +105,8 @@ EM.run do
 		begin
 			obj = JSON.parse(e.data)
 		rescue
-
 			$log_mon.error obj.inspect
+			open_binance()
 		end
 		if (!obj.nil? && !obj["e"].nil?) then
 			$td.orderTradeUpdate(obj)	if obj["e"]=="ORDER_TRADE_UPDATE"
@@ -118,6 +122,7 @@ EM.run do
 			obj = JSON.parse(e.data)
 		rescue
 			$log_mon.error obj.inspect
+			open_binance()
 		end
 		if (!obj.nil? &&!obj["stream"].nil?) then
 			$td.btcusdt_depth5(obj) 		if obj["stream"]=="btcusdt@depth5"
