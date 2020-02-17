@@ -14,7 +14,7 @@ class CandleBot01_params
 
 	def select( set: )
 
-		@param[:CANDLE_PERIOD] = 30.0 * 1000
+		@param[:CANDLE_PERIOD] = 100.0 * 1000
 		@param[:TREND_PERIOD] = 0 * 1000
 
 		@param[:BODY_SIZE] = 2.0
@@ -25,17 +25,17 @@ class CandleBot01_params
 		@param[:CHK_STOP_HISTERESIS] = 20* 1000
 		@param[:STOP_LOSS] = 1.0
 
-		@param[:CHK_FASTSTOP_HISTERESIS] = 10* 1000
-		@param[:FASTSTOP_LOSS] = -2.0
+		@param[:CHK_FASTSTOP_HISTERESIS] = 200* 1000
+		@param[:FASTSTOP_LOSS] = -20.0
 
 
-		@param[:CHK_GAIN_HISTERESIS] = 2 * 1000
+		@param[:CHK_GAIN_HISTERESIS] = 200 * 1000
 		@param[:GAIN_MIN] = 2.0
 
 		# Thresholds for detection of Trend
 		@param[:SUM_THRESHOLD_FORECAST] = 3.6		# Trend forecast confirmed by "sum of bull" x "sum of bear"
 		@param[:SUM_THRESHOLD_REVERSION] = 1.0		# Trend forecast confirmed by "sum of bull" x "sum of bear"
-		@param[:SUM_THRESHOLD_DR] = 0.7				# Derating
+		@param[:SUM_THRESHOLD_DR] = 0.3				# Derating
 
 		@param[:VOL_THRESHOLD_FORECAST] = 0.8	# 30% of previous
 		@param[:VOL_THRESHOLD_REVERSION] = 1.6	# 30% of previous

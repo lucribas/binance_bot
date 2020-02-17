@@ -158,7 +158,7 @@ class Router
 			# binding.pry
 		else
 			$log_mon.info "ERROR not valid operation".red if $log_mon.log_en?
-			binding.pry
+			#binding.pry
 		end
 	end
 
@@ -180,7 +180,7 @@ class Router
 			# binding.pry
 		else
 			$log_mon.info "ERROR not valid operation".red if $log_mon.log_en?
-			binding.pry
+			#binding.pry
 		end
 	end
 

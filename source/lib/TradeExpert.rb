@@ -15,7 +15,7 @@ class TradeExpert
 		# --------
 		# Signals
 		@signals = {}
-		@signals[1] = CandlestickPatterns.new( param: {SMA_PERIOD: 24, BODY_SIZE: 2.0, BODY_AVG_PERIOD: 4.0, VOL_SIZE: 20, VOL_AVG_PERIOD: 4})
+		@signals[1] = CandlestickPatterns.new( param: {SMA_PERIOD: 5, BODY_SIZE: 2.0, BODY_AVG_PERIOD: 4.0, VOL_SIZE: 5, VOL_AVG_PERIOD: 4})
 
 		# -------
 		# Bots

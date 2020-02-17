@@ -161,10 +161,12 @@ class CandleBot01
 
 		if (@r.on_charge_bear && stp_loss) then
 			# binding.pry if (( "%.2f" % profit ) == "-4.54" )
+			# binding.pry
 			@r.trade_close_bear( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], start_bear_price: @r.start_bear_price, profit: profit, msg: msg )
 		end
 
 		if (@r.on_charge_bull && stp_loss) then
+			# binding.pry
 			@r.trade_close_bull( close_rule: rule_msg, time: c1[:time_close], price: c1[:close], start_bull_price: @r.start_bull_price, profit: profit, msg: msg )
 		end
 	end
@@ -241,7 +243,7 @@ class CandleBot01
 		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < stop_adp) && (@r.on_charge_notnone) )
 		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]) && (@r.on_charge_notnone) )
 		# stp_loss		= ( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]) && (@r.on_charge_notnone) )
-		stp_loss		= ( (profit < stop_adp) && (@r.on_charge_notnone) )
+		stp_loss		= ( (profit < stop_adp) && (hister > 120*1000) && (@r.on_charge_notnone) )
 		stp_loss2		= false #( (hister > @param[:CHK_STOP_HISTERESIS]) && (profit < @param[:STOP_LOSS]/3) && (@r.on_charge_notnone) )
 
 		# value of Volume Thresholds
@@ -268,6 +270,7 @@ class CandleBot01
 
 		 vol_th_flg_fore =  ( (c3[:trade_qty]<c2[:trade_qty]) && (c2[:trade_qty]<vol_adj*c1[:trade_qty]) ) && (hilo2>1.0)
 		 vol_th_flg_rev =   ( (c3[:trade_qty]<c2[:trade_qty]) && (c2[:trade_qty]<vol_adj*c1[:trade_qty]) ) && (hilo2>1.0)
+		 vol_th_flg_revc =  ( (c3[:trade_qty]<c2[:trade_qty]) && (c2[:trade_qty]<vol_adj*c1[:trade_qty]) ) && (hilo2>1.0)
 
 		c2_fore_bull_n	= c2_fore_bull && (c2[:sum_bull] >= @param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bear])
 		c2_fore_bear_n	= c2_fore_bear && (c2[:sum_bear] >= @param[:SUM_THRESHOLD_FORECAST]*c2[:sum_bull])
@@ -282,8 +285,11 @@ class CandleBot01
 
 		c1_thr_fore_bull	= ((c1_fore_bull_n && c2_fore_bull_n) && vol_th_flg_fore  && bull_ind)
 		c1_thr_fore_bear	= ((c1_fore_bear_n && c2_fore_bear_n) && vol_th_flg_fore  && bear_ind)
+
 		c1_thr_rev_bull		= ((c1_rev_bull_n  && c2_rev_bull_n)  && vol_th_flg_rev   && bull_ind)
+		c1_thr_rev_bullc	= ((c1_rev_bull_n  && c2_rev_bull_n)  && vol_th_flg_revc  && bull_ind)
 		c1_thr_rev_bear		= ((c1_rev_bear_n  && c2_rev_bear_n)  && vol_th_flg_rev   && bear_ind)
+		c1_thr_rev_bearc	= ((c1_rev_bear_n  && c2_rev_bear_n)  && vol_th_flg_revc  && bear_ind)
 
 
 		# 01 => FORECAST
@@ -297,8 +303,10 @@ class CandleBot01
 
 
 		# 03 => FIGURE REVERSION
-		rule_bull_03 = ( c2_rev_bull && c1_mkt_bull && c1_thr_rev_bull )
-		rule_bear_03 = ( c2_rev_bear && c1_mkt_bear && c1_thr_rev_bear )
+		rule_bull_03  = ( c2_rev_bull && c1_mkt_bull && c1_thr_rev_bull )
+		rule_bull_03c = ( c2_rev_bull && c1_mkt_bull && c1_thr_rev_bullc )
+		rule_bear_03  = ( c2_rev_bear && c1_mkt_bear && c1_thr_rev_bear )
+		rule_bear_03c = ( c2_rev_bear && c1_mkt_bear && c1_thr_rev_bearc )
 
 		# 04 => TREND
 		# melhorar o deteccao de trend - muitos falsos
@@ -310,12 +318,16 @@ class CandleBot01
 
 
 		# 05 => STOP_GAIN
-		rule_bull_05 = ( stp_gain_min && c1_thr_fore_bull )
-		rule_bear_05 = (stp_gain_min && c1_thr_fore_bear )
+		rule_bull_05  = ( stp_gain_min && c1_thr_fore_bull )
+		rule_bull_05c = ( stp_gain_min && c1_thr_fore_bull )
+		rule_bear_05  = (stp_gain_min && c1_thr_fore_bear )
+		rule_bear_05c = (stp_gain_min && c1_thr_fore_bear )
 
 		# 06 => STOP_LOSS
-		rule_bull_06 = (stp_loss || ( stp_loss2 && c2_mkt_bull) || c1_thr_fore_bull )
-		rule_bear_06 = (stp_loss || ( stp_loss2 && c2_mkt_bear) || c1_thr_fore_bear )
+		rule_bull_06  = (stp_loss || ( stp_loss2 && c2_mkt_bull) || c1_thr_fore_bull )
+		rule_bull_06c = (stp_loss || ( stp_loss2 && c2_mkt_bull) || c1_thr_fore_bull )
+		rule_bear_06  = (stp_loss || ( stp_loss2 && c2_mkt_bear) || c1_thr_fore_bear )
+		rule_bear_06c = (stp_loss || ( stp_loss2 && c2_mkt_bear) || c1_thr_fore_bear )
 
 
 		# VOL Increaded detection
@@ -328,8 +340,8 @@ class CandleBot01
 		# FINAL RULES to trade
 		rule_bull_start		= ( rule_bull_01 || rule_bull_02 || rule_bull_03 || rule_bull_04 ) && vol_increased
 		rule_bear_start		= ( rule_bear_01 || rule_bear_02 || rule_bear_03 || rule_bear_04 ) && vol_increased
-		rule_bear_close		= ( rule_bull_03 || rule_bull_05 || rule_bull_06 )
-		rule_bull_close		= ( rule_bear_03 || rule_bear_05 || rule_bear_06 )
+		rule_bear_close		= ( rule_bull_03c || rule_bull_05c || rule_bull_06c )
+		rule_bull_close		= ( rule_bear_03c || rule_bear_05c || rule_bear_06c )
 
 		# Cooldown stop - FORCE a pause to start a new trade
 		cooldown_stp = ((@cool_down_time_en == true) && (c1[:time_close] < (@cool_down_time + @param[:COOL_DOWN_TMP])))
