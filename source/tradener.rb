@@ -92,6 +92,10 @@ $ac.update()
 # => https://pt.slideshare.net/autonomous/ruby-concurrency-and-eventmachine
 # => https://pt.slideshare.net/OmerGazit/ruby-underground-event-machine
 
+# activity watchdog
+$wtg_trie = 0
+$act_wtc = Time.now
+
 EM.run do
 	# Create common event handlers
 	open    = proc { $td.on_open()  }
@@ -111,6 +115,7 @@ EM.run do
 		if (!obj.nil? && !obj["e"].nil?) then
 			$td.orderTradeUpdate(obj)	if obj["e"]=="ORDER_TRADE_UPDATE"
 			$td.accountUpdate(obj)	if obj["e"]=="ACCOUNT_UPDATE"
+			$act_wtc = Time.now
 		end
 		#binding.pry
 	}
@@ -127,6 +132,7 @@ EM.run do
 		if (!obj.nil? &&!obj["stream"].nil?) then
 			$td.btcusdt_depth5(obj) 		if obj["stream"]=="btcusdt@depth5"
 			$td.new_btcusdt_aggTrade(obj)	if obj["stream"]=="btcusdt@aggTrade"
+			$act_wtc = Time.now
 		end
 	}
 
@@ -153,6 +159,23 @@ EM.run do
 		$log_mon.info 'send keep_alive_stream!'
 		$future_rest.keep_alive_stream!
 	}
+
+
+	EM.add_periodic_timer(310) {
+		# if more than 10min without bit
+		if ((Time.now-$act_wtc)>300) then
+			if ($wtg_trie>100) then
+				$log_mon.error "Watchdog: exeeded try number. Exiting"
+				exit(-1)
+			end
+			$log_mon.error "Watchdog: more than 10min without bit! (try=#{$wtg_trie}) Reopen connections.."
+			open_binance()
+			$wtg_trie = $wtg_trie + 1
+		else
+			$wtg_trie = 0
+		end
+	}
+
 
 	# Pass a symbol && event handler Hash to connect && process events
 	#client.agg_trade symbol: 'BTCUSDT', methods: methods
