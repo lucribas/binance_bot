@@ -58,7 +58,8 @@ class Logger
 		return time.strftime("%Y-%m-%d %H:%M:%S")
 	end
 
-	def none( prefix, message)
+	def none( prefix, msg)
+		message = prefix + "\t" + msg
 		if (!message.nil? && message != "") then
 			$stdout.puts message if @stdout_en
 			@file.puts message if (@fileout_en && !@file.nil?)
@@ -68,8 +69,7 @@ class Logger
 			# }
 			$stdout.flush if @stdout_en
 			@file.flush if (@fileout_en && !@file.nil?)
-		end
-	end
+		end	end
 
 	def tradeinfo( message )
 		now = timestamp()
@@ -96,7 +96,6 @@ class Logger
 		none( "|#{now}|ERROR:  ", message.magenta)
 	end
 
-	private :timestamp
 
 
 
@@ -120,6 +119,7 @@ class Logger
 			end
 		end
 
+		private :timestamp
 end
 
 

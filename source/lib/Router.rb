@@ -3,6 +3,7 @@
 # Metodos
 #
 
+require_relative 'Logger'
 require 'binance'
 require 'pry'
 require 'json'

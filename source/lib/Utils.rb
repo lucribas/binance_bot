@@ -1,4 +1,4 @@
-
+require_relative 'Logger'
 require 'net/ntp'
 
 class Utils

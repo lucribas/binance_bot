@@ -1,3 +1,4 @@
+require_relative 'Logger'
 require_relative 'Signals/CandlestickPatterns'
 require_relative 'Bots/CandleBot01'
 require_relative 'Bots/CandleBot01_params'

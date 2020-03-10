@@ -1,5 +1,6 @@
 
 require_relative 'Utils'
+require_relative 'Logger'
 require_relative 'TradePersistence'
 require_relative 'TradeExpert'
 
@@ -39,12 +40,12 @@ class Trade
 
 	def on_open()
 		@log_mon.info 'connected'
-		sent_telegram( "connected to binance!" ) if $telegram_en
+		@log_mon.sent_telegram( "connected to binance!" ) if $telegram_en
 	end
 
 	def on_close()
 		@log_mon.info 'closed'
-		sent_telegram( "CLOSE binance!" ) if $telegram_en
+		@log_mon.sent_telegram( "CLOSE binance!" ) if $telegram_en
 	end
 
 	def on_error(e)
@@ -70,7 +71,7 @@ class Trade
 			msg += " # windows: $ENV:TRADE_REALTIME_DISABLE=1\n"
 			msg += " # linux: export TRADE_REALTIME_DISABLE=1\n"
 			@log_mon.info msg
-			sent_telegram( msg ) if $telegram_en
+			@log_mon.sent_telegram( msg ) if $telegram_en
 			exit(-1)
 		else
 			@log_mon.info "# considering diff=#{$diff}, measured latency=#{$latency}"

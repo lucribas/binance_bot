@@ -20,7 +20,8 @@ export TRADE_DISABLE=1
 export TRADE_REALTIME_DISABLE=1
 export RECORD_ONLY=1
 
-nohup ruby tradener.rb &
+nohup ruby TradenerService.rb &
+##nohup ruby tradener.rb &
 ```
 
 ## 1.2 Windows

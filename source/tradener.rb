@@ -161,14 +161,14 @@ EM.run do
 	}
 
 
-	EM.add_periodic_timer(310) {
+	EM.add_periodic_timer(130) {
 		# if more than 10min without bit
-		if ((Time.now-$act_wtc)>300) then
-			if ($wtg_trie>100) then
+		if ((Time.now-$act_wtc)>120) then
+			if ($wtg_trie>10) then
 				$log_mon.error "Watchdog: exeeded try number. Exiting"
 				exit(-1)
 			end
-			$log_mon.error "Watchdog: more than 10min without bit! (try=#{$wtg_trie}) Reopen connections.."
+			$log_mon.error "Watchdog: more than 2min without bit! (try=#{$wtg_trie}) Reopen connections.."
 			open_binance()
 			$wtg_trie = $wtg_trie + 1
 		else
